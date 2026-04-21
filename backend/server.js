@@ -47,13 +47,17 @@ app.use(express.urlencoded({ extended: true }));
 // CORS — allow all localhost dev ports
 app.use(cors({
   origin: (origin, callback) => {
-    const allowed = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+    const allowed = [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175', // ✅ ye add kar
+      'http://localhost:3000'
+    ];
     if (!origin || allowed.includes(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 }));
-
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 min
