@@ -1,86 +1,125 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { io } from 'socket.io-client';
 
-// Fix for default Leaflet markers not loading in React
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-const providerIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/3204/3204121.png', // Van icon
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
-  popupAnchor: [0, -35],
-});
+const containerStyle = { width: '100%', height: '300px', borderRadius: '1rem' };
 
 const LiveTrackingMap = ({ bookingId, userLocation, isProvider }) => {
-  // Default coordinates (Mumbai as fallback)
-  const defaultUserLoc = userLocation || [19.0760, 72.8777]; 
-  
-  // Provider starts slightly away
-  const [providerLoc, setProviderLoc] = useState([defaultUserLoc[0] - 0.01, defaultUserLoc[1] - 0.01]);
-  const [route, setRoute] = useState([defaultUserLoc, [defaultUserLoc[0] - 0.01, defaultUserLoc[1] - 0.01]]);
+  const [uLoc, setULoc] = useState(userLocation || { lat: 19.0760, lng: 72.8777 });
+  const [pLoc, setPLoc] = useState(null);
+  const [directions, setDirections] = useState(null);
+  const [distance, setDistance] = useState('');
+  const [duration, setDuration] = useState('');
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+  });
 
   useEffect(() => {
     const socketUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
     const socket = io(socketUrl);
     socket.emit('join_booking', bookingId);
 
-    if (isProvider) {
-      // Mocking live location updates for presentation
-      let currentLat = providerLoc[0];
-      let currentLng = providerLoc[1];
-      
-      const interval = setInterval(() => {
-        // Move 10% closer to user every 2 seconds
-        currentLat += (defaultUserLoc[0] - currentLat) * 0.1;
-        currentLng += (defaultUserLoc[1] - currentLng) * 0.1;
-        
-        socket.emit('update_location', { bookingId, lat: currentLat, lng: currentLng });
-        setProviderLoc([currentLat, currentLng]);
-      }, 2000);
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const type = isProvider ? 'provider' : 'user';
+        socket.emit('update_location', { bookingId, lat: latitude, lng: longitude, type });
+        if (isProvider) setPLoc({ lat: latitude, lng: longitude });
+        else setULoc({ lat: latitude, lng: longitude });
+      },
+      (err) => console.error(err),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
 
-      return () => {
-        clearInterval(interval);
-        socket.disconnect();
-      };
-    } else {
-      socket.on('location_update', (data) => {
-        setProviderLoc([data.lat, data.lng]);
-        setRoute(prev => [...prev, [data.lat, data.lng]]);
-      });
+    socket.on('location_update', (data) => {
+      if (data.type === 'provider') setPLoc({ lat: data.lat, lng: data.lng });
+      if (data.type === 'user') setULoc({ lat: data.lat, lng: data.lng });
+    });
 
-      return () => socket.disconnect();
-    }
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      socket.disconnect();
+    };
   }, [bookingId, isProvider]);
 
+  useEffect(() => {
+    if (isLoaded && window.google && pLoc && uLoc) {
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin: pLoc,
+          destination: uLoc,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            setDirections(result);
+            setDistance(result.routes[0].legs[0].distance.text);
+            setDuration(result.routes[0].legs[0].duration.text);
+          }
+        }
+      );
+    }
+  }, [pLoc, uLoc, isLoaded]);
+
+  if (!isLoaded) return <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-surface)' }}>Loading Maps...</div>;
+
   return (
-    <div style={{ height: '300px', width: '100%', borderRadius: '1rem', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-      <MapContainer center={defaultUserLoc} zoom={13} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        
-        {/* User Location */}
-        <Marker position={defaultUserLoc}>
-          <Popup>Service Location</Popup>
-        </Marker>
+    <div style={{ position: 'relative', height: '350px', width: '100%', borderRadius: '2rem', overflow: 'hidden', border: '1px solid var(--border-accent)', boxShadow: 'var(--brand-glow)' }}>
+      {/* HUD Info - Luxury Amber Design */}
+      <div style={{ 
+        position: 'absolute', top: 20, left: 20, zIndex: 10, 
+        background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(10px)',
+        padding: '1.25rem', borderRadius: '1.25rem', border: '1px solid var(--border-accent)',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)', minWidth: 200
+      }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+           <div className="pulse" style={{ width:10, height:10, borderRadius:99, background:'var(--accent)' }} />
+           <span style={{ fontSize:'0.7rem', fontWeight:900, color:'var(--accent)', letterSpacing:'0.1em' }}>LIVE TRACKING ACTIVE</span>
+        </div>
+        <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 800 }}>ESTIMATED ARRIVAL</p>
+        <p style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>{duration || '---'}</p>
+        <div style={{ height:1, background:'var(--border-subtle)', margin:'12px 0' }} />
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+           <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>Distance</span>
+           <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent)' }}>{distance || '0.0 km'}</span>
+        </div>
+      </div>
 
-        {/* Provider Location */}
-        <Marker position={providerLoc} icon={providerIcon}>
-          <Popup>Provider is on the way!</Popup>
-        </Marker>
-
-        {/* Route Line */}
-        <Polyline positions={[defaultUserLoc, providerLoc]} color="#6366f1" weight={4} dashArray="10, 10" />
-      </MapContainer>
+      <GoogleMap 
+        mapContainerStyle={{ width: '100%', height: '100%' }} 
+        center={uLoc} 
+        zoom={14} 
+        options={{ 
+          disableDefaultUI: true, 
+          styles: [
+            { elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
+            { elementType: "labels.text.stroke", stylers: [{ color: "#0a0a0a" }] },
+            { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+            { featureType: "road", elementType: "geometry", stylers: [{ color: "#1f1f1f" }] },
+            { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#333333" }] },
+            { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
+          ] 
+        }}
+      >
+        <Marker position={uLoc} label="U" />
+        {pLoc && <Marker position={pLoc} label="P" />}
+        {directions && (
+          <DirectionsRenderer
+            directions={directions}
+            options={{
+              suppressMarkers: true,
+              polylineOptions: { 
+                strokeColor: '#facc15',
+                strokeWeight: 6,
+                strokeOpacity: 0.8
+              }
+            }}
+          />
+        )}
+      </GoogleMap>
     </div>
   );
 };

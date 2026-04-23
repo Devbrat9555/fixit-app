@@ -4,15 +4,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchServiceById } from '../redux/slices/servicesSlice';
 import BookingWizard from '../components/booking/BookingWizard';
 import Loader from '../components/common/Loader';
-import { Star, Clock, MapPin, CheckCircle, Shield, Award, ArrowLeft, Zap, Users, Tag } from 'lucide-react';
-
-const StarFull = ({ n }) => (
-  <div style={{ display:'flex', gap:2 }}>
-    {[1,2,3,4,5].map(i => (
-      <Star key={i} size={14} style={{ fill: i<=n ? '#fbbf24' : 'transparent', color: i<=n ? '#fbbf24' : 'var(--text-muted)' }} />
-    ))}
-  </div>
-);
+import { Star, Clock, MapPin, CheckCircle, Shield, Award, ArrowLeft, Zap, Users, Tag, Phone, ShieldCheck, Sparkles, MessageSquare, ArrowRight, Info } from 'lucide-react';
+import api from '../services/api';
+import toast from 'react-hot-toast';
 
 const ServiceDetailPage = () => {
   const { id } = useParams();
@@ -20,217 +14,193 @@ const ServiceDetailPage = () => {
   const navigate = useNavigate();
   const { currentService: service, isLoading } = useSelector(s => s.services);
   const { user } = useSelector(s => s.auth);
+  
   const [showWizard, setShowWizard] = useState(false);
+  const [experts, setExperts] = useState([]);
+  const [isFetchingExperts, setIsFetchingExperts] = useState(false);
+  const [selectedExpert, setSelectedExpert] = useState(null);
 
-  useEffect(() => { dispatch(fetchServiceById(id)); }, [id, dispatch]);
+  useEffect(() => { 
+    dispatch(fetchServiceById(id)); 
+  }, [id, dispatch]);
 
-  if (isLoading) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', paddingTop:80 }}><Loader /></div>;
-  if (!service)  return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', paddingTop:80, color:'var(--text-muted)', textAlign:'center' }}>Service not found.<br /><Link to="/services" style={{ color:'var(--brand-400)', marginTop:12, display:'block' }}>← Back to services</Link></div>;
+  useEffect(() => {
+    if (service?.category?.name) {
+      fetchExperts();
+    }
+  }, [service]);
 
-  const provider = service.provider;
+  const fetchExperts = async () => {
+    setIsFetchingExperts(true);
+    try {
+      const { data } = await api.get('/auth/providers', {
+        params: { skill: service.category.name }
+      });
+      setExperts(data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsFetchingExperts(false);
+    }
+  };
+
+  const handleBookNow = (expert = null) => {
+    if (!user) {
+      toast.error('Authentication required to book luxury services.');
+      navigate('/login');
+      return;
+    }
+    
+    if (user.role === 'provider') {
+      toast.error('Expert accounts cannot book services. Please use a customer account.');
+      return;
+    }
+
+    setSelectedExpert(expert);
+    setShowWizard(true);
+  };
+
+  if (isLoading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader /></div>;
+  if (!service) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Service portfolio not found.</div>;
 
   return (
-    <div style={{ minHeight:'100vh', paddingTop:64 }}>
-      {showWizard && <BookingWizard service={service} onClose={() => setShowWizard(false)} />}
+    <div className="fade-in" style={{ paddingBottom: 120 }}>
+      {showWizard && <BookingWizard service={service} onClose={() => setShowWizard(false)} initialExpertId={selectedExpert?._id} />}
 
-      {/* Hero Image */}
-      <div style={{ position:'relative', height:340, overflow:'hidden' }}>
-        <img
-          src={service.image || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200'}
-          alt={service.title}
-          style={{ width:'100%', height:'100%', objectFit:'cover' }}
-          onError={e => e.target.src='https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200'}
-        />
-        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, rgba(7,11,20,0.4) 0%, rgba(7,11,20,0.9) 100%)' }} />
-        <div className="container" style={{ position:'absolute', bottom:0, left:0, right:0, padding:'0 1.25rem 2rem' }}>
-          <button onClick={() => navigate(-1)} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'0.5rem 0.875rem', borderRadius:'0.625rem', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.15)', color:'white', cursor:'pointer', marginBottom:16, fontSize:'0.85rem', backdropFilter:'blur(8px)' }}>
-            <ArrowLeft size={15} /> Back
+      {/* ── HEADER HERO ────────────────────────────────────────── */}
+      <section style={{ 
+        background: 'var(--bg-card)', 
+        padding: '5rem 0 4rem', 
+        borderBottom: '1px solid var(--border-subtle)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'var(--brand-grad)', opacity:0.3 }} />
+        
+        <div className="container">
+          <button onClick={() => navigate(-1)} className="btn" style={{ background:'none', border:'none', color:'var(--text-muted)', display:'flex', alignItems:'center', gap:10, marginBottom:32, fontWeight:700, padding:0 }}>
+            <ArrowLeft size={20} /> BACK TO CATALOGUE
           </button>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:12 }}>
-            {service.category && (
-              <span style={{ padding:'0.25rem 0.75rem', borderRadius:999, fontSize:'0.75rem', fontWeight:600, background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', color:'white' }}>
-                {service.category.icon} {service.category.name}
-              </span>
-            )}
-            {service.isUrgent && (
-              <span style={{ padding:'0.25rem 0.75rem', borderRadius:999, fontSize:'0.75rem', fontWeight:700, background:'rgba(244,63,94,0.8)', color:'white', display:'flex', alignItems:'center', gap:4 }}>
-                <Zap size={11} fill="white" /> URGENT AVAILABLE
-              </span>
-            )}
-          </div>
-          <h1 style={{ fontSize:'clamp(1.5rem,4vw,2.25rem)', fontWeight:900, color:'white', letterSpacing:'-0.02em', lineHeight:1.2 }}>{service.title}</h1>
-          <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:16, marginTop:10 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <StarFull n={Math.round(service.rating)} />
-              <span style={{ color:'white', fontWeight:700 }}>{service.rating?.toFixed(1)}</span>
-              <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.85rem' }}>({service.totalRatings} reviews)</span>
-            </div>
-            <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.85rem', display:'flex', alignItems:'center', gap:4 }}>
-              <Clock size={13} /> {service.duration} min
-            </span>
-            <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.85rem', display:'flex', alignItems:'center', gap:4 }}>
-              <Users size={13} /> {service.totalBookings}+ booked
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="container" style={{ padding:'2rem 1.25rem', display:'grid', gridTemplateColumns:'1fr 340px', gap:32, alignItems:'start' }}>
-        {/* Left */}
-        <div style={{ minWidth:0 }}>
-          {/* Description */}
-          <div className="card" style={{ padding:'1.5rem', marginBottom:20 }}>
-            <h2 style={{ fontSize:'1.05rem', fontWeight:700, marginBottom:'1rem', color:'var(--text-primary)' }}>About This Service</h2>
-            <p style={{ color:'var(--text-secondary)', lineHeight:1.8, fontSize:'0.9rem' }}>{service.description}</p>
-          </div>
-
-          {/* Tags */}
-          {service.tags?.length > 0 && (
-            <div className="card" style={{ padding:'1.25rem', marginBottom:20 }}>
-              <h3 style={{ fontSize:'0.9rem', fontWeight:700, marginBottom:'0.875rem', display:'flex', alignItems:'center', gap:6 }}>
-                <Tag size={15} color="var(--brand-400)" /> Tags
-              </h3>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                {service.tags.map(tag => (
-                  <span key={tag} style={{ padding:'0.3rem 0.75rem', borderRadius:999, fontSize:'0.78rem', fontWeight:500, background:'rgba(99,102,241,0.1)', border:'1px solid rgba(99,102,241,0.2)', color:'var(--brand-400)' }}>
-                    #{tag}
-                  </span>
-                ))}
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '5rem', alignItems: 'center' }} className="grid-mobile-stack">
+            <div className="reveal-up">
+              <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+                <span className="badge badge-pending" style={{ padding:'0.5rem 1.25rem' }}>{service.category?.name?.toUpperCase()}</span>
+                {service.isUrgent && <span className="badge badge-success" style={{ padding:'0.5rem 1.25rem' }}><Zap size={12} fill="currentColor" /> PRIORITY</span>}
+              </div>
+              <h1 style={{ fontSize: '4.5rem', marginBottom: '1.5rem' }}>{service.title}</h1>
+              <p style={{ fontSize: '1.2rem', color: 'var(--text-dim)', lineHeight: 1.8, marginBottom: 40, maxWidth: 650 }}>{service.description}</p>
+              
+              <div style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
+                 <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                    <div style={{ width:56, height:56, borderRadius:16, background:'var(--accent-soft)', display:'flex', alignItems:'center', justifyContent:'center' }}><Star size={24} className="text-accent" fill="var(--accent)" /></div>
+                    <div><p style={{ fontWeight:900, fontSize:'1.4rem', color:'white' }}>{service.rating || '5.0'}</p><p style={{ fontSize:'0.75rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase' }}>Service Score</p></div>
+                 </div>
+                 <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                    <div style={{ width:56, height:56, borderRadius:16, background:'rgba(255,255,255,0.05)', display:'flex', alignItems:'center', justifyContent:'center' }}><Clock size={24} className="text-dim" /></div>
+                    <div><p style={{ fontWeight:900, fontSize:'1.4rem', color:'white' }}>{service.duration || 60}m</p><p style={{ fontSize:'0.75rem', color:'var(--text-muted)', fontWeight:700, textTransform:'uppercase' }}>Avg Duration</p></div>
+                 </div>
               </div>
             </div>
-          )}
-
-          {/* Guarantees */}
-          <div className="card" style={{ padding:'1.5rem', marginBottom:20 }}>
-            <h3 style={{ fontSize:'0.9rem', fontWeight:700, marginBottom:'1rem' }}>What's Included</h3>
-            <div style={{ display:'grid', gap:10 }}>
-              {[
-                { icon: Shield,    text: 'Verified & background-checked professional' },
-                { icon: Award,     text: '100% satisfaction or free re-service' },
-                { icon: CheckCircle, text: 'On-time arrival guaranteed' },
-                { icon: Clock,     text: 'Transparent pricing — no hidden charges' },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} style={{ display:'flex', alignItems:'center', gap:10, fontSize:'0.875rem', color:'var(--text-secondary)' }}>
-                  <div style={{ width:28, height:28, borderRadius:8, background:'rgba(16,185,129,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <Icon size={13} color="var(--accent-emerald)" />
-                  </div>
-                  {text}
-                </div>
-              ))}
+            
+            <div className="glass-card reveal-up" style={{ padding: '3.5rem', textAlign: 'center', border: '1px solid var(--border-accent)', background:'linear-gradient(135deg, rgba(20,20,20,1) 0%, rgba(30,30,30,1) 100%)' }}>
+               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing:'0.15em' }}>EXECUTIVE SERVICE PACKAGE</span>
+               <h2 style={{ fontSize: '4rem', fontWeight: 900, color: 'white', margin: '1rem 0' }}>₹{service.price?.toLocaleString()}</h2>
+               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, color:'var(--text-muted)', marginBottom:40 }}>
+                  <ShieldCheck size={16} /> <span style={{ fontSize:'0.85rem', fontWeight:600 }}>Comprehensive Insurance Included</span>
+               </div>
+               <button onClick={() => handleBookNow()} className="btn btn-primary" style={{ width: '100%', height: 72, fontSize: '1.2rem', borderRadius:20 }}>Secure Your Slot <ArrowRight size={20} style={{ marginLeft:12 }} /></button>
+               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 24, fontWeight:600 }}>Satisfaction Guaranteed or Full Re-service</p>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Provider */}
-          {provider && (
-            <div className="card" style={{ padding:'1.5rem' }}>
-              <h3 style={{ fontSize:'0.9rem', fontWeight:700, marginBottom:'1rem' }}>Your Service Provider</h3>
-              <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                <div className="avatar" style={{ width:52, height:52, fontSize:'1.25rem', flexShrink:0 }}>{provider.name?.charAt(0)}</div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
-                    <p style={{ fontWeight:700, fontSize:'1rem', color:'var(--text-primary)' }}>{provider.name}</p>
-                    {provider.providerProfile?.isVerified && (
-                      <span style={{ display:'flex', alignItems:'center', gap:3, fontSize:'0.72rem', fontWeight:600, color:'var(--accent-emerald)', background:'rgba(16,185,129,0.1)', padding:'0.15rem 0.5rem', borderRadius:999 }}>
-                        <CheckCircle size={10} /> Verified
-                      </span>
-                    )}
+      {/* ── CONTENT BODY ──────────────────────────────────────── */}
+      <div className="container" style={{ marginTop: '8rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '6rem' }} className="grid-mobile-stack">
+          
+          {/* Left: Experts Portfolio */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 48 }}>
+               <div style={{ width:64, height:64, borderRadius:20, background: 'var(--bg-elevated)', display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid var(--border-rich)' }}><Users size={28} className="text-accent" /></div>
+               <div>
+                  <span style={{ color:'var(--accent)', fontWeight:800, fontSize:'0.7rem', letterSpacing:'0.15em' }}>CERTIFIED PROFESSIONALS</span>
+                  <h3 style={{ fontSize: '2.25rem', fontWeight: 800, color:'white', marginTop:4 }}>Available Experts</h3>
+               </div>
+            </div>
+
+            {isFetchingExperts ? <div style={{ padding: '6rem', textAlign: 'center' }}><Loader /></div> : (
+              <div style={{ display: 'grid', gap: 24 }}>
+                {experts.length === 0 ? (
+                  <div className="glass-card" style={{ padding: '4rem', textAlign: 'center' }}>
+                     <Info size={48} className="text-dim" style={{ marginBottom:20, opacity:0.3 }} />
+                     <p style={{ color: 'var(--text-dim)', fontSize:'1.1rem', maxWidth:450, margin:'0 auto' }}>No category-specific experts are currently available. You may proceed with an Instant Booking, and we will assign our top-tier professional within 15 minutes.</p>
                   </div>
-                  {provider.providerProfile?.bio && (
-                    <p style={{ fontSize:'0.82rem', color:'var(--text-secondary)', lineHeight:1.6, marginBottom:'0.75rem' }}>{provider.providerProfile.bio}</p>
-                  )}
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:12 }}>
-                    {[
-                      { label: `${provider.providerProfile?.experience || 0}+ yrs exp`, icon: Award },
-                      { label: `${provider.providerProfile?.rating?.toFixed(1) || '0.0'} rating`, icon: Star },
-                      { label: `${provider.providerProfile?.completedJobs || 0} jobs done`, icon: CheckCircle },
-                    ].map(({ label, icon: Icon }) => (
-                      <div key={label} style={{ display:'flex', alignItems:'center', gap:5, fontSize:'0.8rem', color:'var(--text-secondary)' }}>
-                        <Icon size={13} color="var(--brand-400)" /> {label}
+                ) : (
+                  experts.map(expert => (
+                    <div key={expert._id} className="glass-card reveal-up" style={{ padding: '2rem', display: 'flex', gap: 32, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div className="avatar" style={{ width: 100, height: 100, fontSize: '2rem', borderRadius:24, background:'var(--bg-elevated)', border:'1px solid var(--border-rich)', color:'var(--accent)' }}>{expert.name.charAt(0)}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                          <h4 style={{ fontSize: '1.5rem', fontWeight: 800, color:'white' }}>{expert.name}</h4>
+                          {expert.providerProfile?.isVerified && <div style={{ background:'var(--accent-soft)', padding:'0.2rem 0.6rem', borderRadius:6, display:'flex', alignItems:'center', gap:6 }}><ShieldCheck size={14} className="text-accent" /><span style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--accent)' }}>VERIFIED</span></div>}
+                        </div>
+                        <div style={{ display: 'flex', gap: 24, color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 16 }}>
+                           <span style={{ display: 'flex', alignItems:'center', gap:8 }}><Star size={16} fill="var(--accent)" color="var(--accent)" /> <span style={{ color:'white', fontWeight:700 }}>{expert.providerProfile?.rating}</span></span>
+                           <span style={{ display: 'flex', alignItems:'center', gap:8 }}><Award size={16} /> {expert.providerProfile?.experience} Yrs Tenure</span>
+                           <span style={{ display: 'flex', alignItems:'center', gap:8 }}><CheckCircle size={16} /> {expert.providerProfile?.completedJobs} Deliveries</span>
+                        </div>
+                        <p style={{ fontSize: '0.95rem', color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: 20 }} className="line-clamp-2">{expert.providerProfile?.bio}</p>
+                        
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                           {expert.providerProfile?.skills?.slice(0, 3).map(skill => (
+                              <span key={skill} style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--text-muted)', background:'rgba(255,255,255,0.03)', padding:'0.3rem 0.6rem', borderRadius:6, border:'1px solid var(--border-subtle)' }}>{skill.toUpperCase()}</span>
+                           ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Booking Card */}
-        <div style={{ position:'sticky', top:80 }}>
-          <div className="card" style={{ padding:'1.5rem', marginBottom:16 }}>
-            {/* Price */}
-            <div style={{ display:'flex', alignItems:'baseline', gap:6, marginBottom:4 }}>
-              <span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>
-                {service.priceType === 'fixed' ? '' : service.priceType === 'hourly' ? '/hr • ' : 'Starting from '}
-              </span>
-              <span style={{ fontSize:'2rem', fontWeight:900, color:'var(--brand-400)', letterSpacing:'-0.02em' }}>
-                ₹{service.price?.toLocaleString('en-IN')}
-              </span>
-            </div>
-            <p style={{ fontSize:'0.78rem', color:'var(--text-muted)', marginBottom:'1.5rem' }}>Incl. all taxes. No hidden charges.</p>
-
-            {/* Quick info */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:'1.5rem' }}>
-              {[
-                { label:'Duration', value:`${service.duration} min`, icon: Clock },
-                { label:'Rating', value:`${service.rating?.toFixed(1)} ⭐`, icon: Star },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} style={{ padding:'0.75rem', borderRadius:'0.625rem', background:'var(--bg-surface)', border:'1px solid var(--border-subtle)', textAlign:'center' }}>
-                  <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginBottom:2 }}>{label}</p>
-                  <p style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--text-primary)' }}>{value}</p>
-                </div>
-              ))}
-            </div>
-
-            {user ? (
-              user.role === 'user' ? (
-                <button onClick={() => setShowWizard(true)} className="btn btn-primary btn-full" style={{ padding:'0.875rem', fontSize:'1rem' }}>
-                  📅 Book Now
-                </button>
-              ) : (
-                <div style={{ padding:'0.875rem', borderRadius:'0.75rem', background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)', textAlign:'center', fontSize:'0.85rem', color:'var(--text-muted)' }}>
-                  Bookings are only available for customers.
-                </div>
-              )
-            ) : (
-              <div>
-                <Link to="/login" className="btn btn-primary btn-full" style={{ padding:'0.875rem', fontSize:'1rem', justifyContent:'center', display:'flex' }}>
-                  Login to Book
-                </Link>
-                <p style={{ textAlign:'center', fontSize:'0.78rem', color:'var(--text-muted)', marginTop:8 }}>
-                  New user? <Link to="/register" style={{ color:'var(--brand-400)' }}>Register free</Link>
-                </p>
+                      <div style={{ textAlign: 'right', display:'flex', flexDirection:'column', gap:12 }}>
+                         <button onClick={() => handleBookNow(expert)} className="btn btn-primary" style={{ borderRadius:14, padding:'1rem 2rem', fontWeight:800 }}>Instant Book</button>
+                         <Link to={`/providers/${expert._id}`} className="btn btn-outline" style={{ borderRadius:14, padding:'0.8rem 1.5rem', fontSize:'0.75rem', fontWeight:800, border:'1px solid var(--border-rich)' }}>View Profile</Link>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
 
-          {/* Trust indicators */}
-          <div style={{ display:'grid', gap:8 }}>
-            {[
-              '✅ Verified professional',
-              '🛡️ Insured & secure',
-              '🔄 Free re-service if unsatisfied',
-            ].map(t => (
-              <div key={t} style={{ fontSize:'0.8rem', color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
-                {t}
-              </div>
-            ))}
+          {/* Right: Guarantees Column */}
+          <div>
+             <div className="glass-card" style={{ padding:'3rem', position:'sticky', top:'calc(var(--nav-h) + 2rem)' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 32, color:'white' }}>Fixit Gold Standard</h3>
+                <div style={{ display: 'grid', gap: 32 }}>
+                   {[
+                     { icon: ShieldCheck, title: 'Background Verified', desc: 'Rigorous 3-step authentication for every expert on our platform.', color: 'var(--accent)' },
+                     { icon: Award, title: 'Quality Guarantee', desc: 'If you are not satisfied, we will provide a full re-service at no cost.', color: 'var(--success)' },
+                     { icon: MessageSquare, title: 'Concierge Support', desc: 'Dedicated service managers available for every luxury booking.', color: 'var(--info)' },
+                     { icon: Sparkles, title: 'Transparent Pricing', desc: 'No hidden surcharges. What you see is the final professional investment.', color: '#a855f7' },
+                   ].map((item, i) => (
+                     <div key={i} style={{ display: 'flex', gap: 20 }}>
+                       <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.03)', border:'1px solid var(--border-rich)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <item.icon size={24} color={item.color} />
+                       </div>
+                       <div>
+                          <p style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 4, color:'white' }}>{item.title}</p>
+                          <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)', lineHeight: 1.6 }}>{item.desc}</p>
+                       </div>
+                     </div>
+                   ))}
+                </div>
+                
+                <div style={{ marginTop:48, padding:'2rem', borderRadius:20, background:'var(--bg-elevated)', border:'1px solid var(--border-subtle)', textAlign:'center' }}>
+                   <p style={{ fontSize:'0.85rem', color:'var(--text-muted)', fontWeight:600 }}>Questions about this service?</p>
+                   <p style={{ fontSize:'1.1rem', fontWeight:800, color:'white', marginTop:8 }}>Call 1800-FIX-IT-NOW</p>
+                </div>
+             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Mobile Book Button */}
-      <div className="show-mobile" style={{ position:'fixed', bottom:0, left:0, right:0, padding:'1rem', background:'var(--bg-card)', borderTop:'1px solid var(--border-subtle)', zIndex:40 }}>
-        {user?.role === 'user' ? (
-          <button onClick={() => setShowWizard(true)} className="btn btn-primary btn-full btn-lg">
-            📅 Book Now — ₹{service.price?.toLocaleString('en-IN')}
-          </button>
-        ) : !user ? (
-          <Link to="/login" className="btn btn-primary btn-full btn-lg" style={{ justifyContent:'center', display:'flex' }}>
-            Login to Book
-          </Link>
-        ) : null}
+        </div>
       </div>
     </div>
   );

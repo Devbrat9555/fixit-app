@@ -1,7 +1,9 @@
-const jwt = require('jsonwebtoken');
+const { createClerkClient } = require('@clerk/clerk-sdk-node');
 const User = require('../models/User');
 
-// Protect routes - verify JWT token
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+
+// Protect routes - verify Clerk JWT token
 const protect = async (req, res, next) => {
   let token;
 
@@ -14,11 +16,36 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
+    const decoded = await clerkClient.verifyToken(token);
+    const clerkId = decoded.sub;
+
+    req.user = await User.findOne({ clerkId });
 
     if (!req.user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
+      // Auto-sync user if they don't exist in DB yet
+      try {
+        const clerkUser = await clerkClient.users.getUser(clerkId);
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
+        
+        // Check if user exists by email (if they registered previously with JWT)
+        let existingUser = await User.findOne({ email });
+        if (existingUser) {
+          existingUser.clerkId = clerkId;
+          await existingUser.save();
+          req.user = existingUser;
+        } else {
+          req.user = await User.create({
+            clerkId: clerkId,
+            name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'New User',
+            email: email,
+            role: 'user',
+            isApproved: true,
+          });
+        }
+      } catch (err) {
+        console.error("Auto-sync failed:", err);
+        return res.status(401).json({ success: false, message: 'User not synced' });
+      }
     }
 
     if (!req.user.isActive) {
@@ -27,6 +54,7 @@ const protect = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.error("Clerk Auth Error:", error.message);
     return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
   }
 };
@@ -46,12 +74,7 @@ const authorize = (...roles) => {
 
 // Check if provider is approved
 const requireApproved = (req, res, next) => {
-  if (req.user.role === 'provider' && !req.user.isApproved) {
-    return res.status(403).json({
-      success: false,
-      message: 'Your provider account is pending approval by admin',
-    });
-  }
+  // Bypassed as requested - All providers are now auto-approved
   next();
 };
 

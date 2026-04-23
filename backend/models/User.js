@@ -3,6 +3,11 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
+    clerkId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -18,8 +23,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
     phone: {
@@ -47,15 +50,15 @@ const userSchema = new mongoose.Schema(
 
     isApproved: {
       type: Boolean,
-      default: function () {
-        return this.role !== 'provider';
-      },
+      default: true,
     },
     isActive: { type: Boolean, default: true },
+    hasFinishedSetup: { type: Boolean, default: false },
 
     // ── Provider-specific fields ──────────────────────────────────────────────
     providerProfile: {
       bio: { type: String, maxlength: 500 },
+      skills: [String],
       experience: { type: Number, default: 0 },
       rating: { type: Number, default: 0, min: 0, max: 5 },
       totalRatings: { type: Number, default: 0 },

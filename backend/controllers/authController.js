@@ -24,7 +24,7 @@ const register = asyncHandler(async (req, res) => {
     password,
     phone,
     role: userRole,
-    isApproved: userRole !== 'provider', // providers need admin approval
+    isApproved: true, // Auto-approve all roles as requested
   });
 
   sendTokenResponse(user, 201, res);
@@ -111,4 +111,88 @@ const changePassword = asyncHandler(async (req, res) => {
   sendTokenResponse(user, 200, res);
 });
 
-module.exports = { register, login, getMe, updateProfile, changePassword };
+// @desc    Complete user/provider setup
+// @route   POST /api/auth/complete-setup
+// @access  Private
+const completeSetup = asyncHandler(async (req, res) => {
+  const { role, phone, address, providerProfile } = req.body;
+
+  if (!['user', 'provider'].includes(role)) {
+    res.status(400);
+    throw new Error('Invalid role selected');
+  }
+
+  const updateData = {
+    role,
+    phone,
+    address,
+    hasFinishedSetup: true,
+  };
+
+  if (role === 'provider' && providerProfile) {
+    updateData.providerProfile = providerProfile;
+  }
+  
+  updateData.isApproved = true; // Auto-approve as requested
+
+  const user = await User.findByIdAndUpdate(req.user._id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  res.status(200).json({ success: true, data: user });
+});
+
+// @desc    Get providers by skill/category
+// @route   GET /api/auth/providers
+// @access  Private
+const getProviders = asyncHandler(async (req, res) => {
+  const { skill, city } = req.query;
+  const query = { role: 'provider', isApproved: true, isActive: true };
+  
+  if (skill) {
+    // Flexible match: "Electrical" matches "Electrician", "Appliances" matches "Appliance Repair"
+    const skillBase = skill.toLowerCase().substring(0, 5); 
+    query['providerProfile.skills'] = { $regex: new RegExp(skillBase, 'i') };
+  }
+  
+  if (city) {
+    query['address.city'] = { $regex: city, $options: 'i' };
+  }
+
+  let providers = await User.find(query).select('-password');
+  res.status(200).json({ success: true, data: providers });
+});
+
+// @desc    Get single provider by ID
+// @route   GET /api/auth/providers/:id
+// @access  Private
+const getProviderById = asyncHandler(async (req, res) => {
+  const provider = await User.findById(req.params.id).select('-password');
+  if (!provider || provider.role !== 'provider') {
+    res.status(404);
+    throw new Error('Provider not found');
+  }
+  res.status(200).json({ success: true, data: provider });
+});
+
+const promoteUser = asyncHandler(async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ success: false, message: 'Not allowed in production' });
+  }
+  const { role } = req.body;
+  const user = await User.findByIdAndUpdate(req.user._id, { role }, { new: true });
+  res.status(200).json({ success: true, data: user });
+});
+
+module.exports = { 
+  register, 
+  login, 
+  getMe, 
+  updateProfile, 
+  changePassword, 
+  completeSetup, 
+  getProviders, 
+  getProviderById,
+  promoteUser
+};

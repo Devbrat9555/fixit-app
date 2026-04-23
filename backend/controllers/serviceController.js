@@ -155,7 +155,7 @@ const getMyServices = asyncHandler(async (req, res) => {
 const getFeaturedServices = asyncHandler(async (req, res) => {
   const services = await Service.find({ isActive: true })
     .populate('category', 'name icon')
-    .populate('provider', 'name avatar')
+    .populate('provider', 'name avatar providerProfile.rating')
     .sort('-rating -totalBookings')
     .limit(8);
 

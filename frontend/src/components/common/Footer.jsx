@@ -1,90 +1,130 @@
 import { Link } from 'react-router-dom';
-import { Wrench, Mail, Phone, MapPin, Share2, Send, Globe, ExternalLink } from 'lucide-react';
-
+import { Wrench, Phone, MapPin, ShieldCheck, Heart, Send, Mail, MessageSquare } from 'lucide-react';
+import { FiInstagram } from 'react-icons/fi';
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
+  const footerLinks = {
+    company: [
+      { label: 'About Us', to: '#' },
+      { label: 'Careers', to: '#' },
+      { label: 'Blog', to: '#' },
+      { label: 'Partner with Us', to: '/register' },
+    ],
+    services: [
+      { label: 'Home Cleaning', to: '/services' },
+      { label: 'AC Maintenance', to: '/services' },
+      { label: 'Electrical Help', to: '/services' },
+      { label: 'Plumbing Experts', to: '/services' },
+    ],
+    support: [
+      { label: 'Help Center', to: '#' },
+      { label: 'Safety Measures', to: '#' },
+      { label: 'Terms & Conditions', to: '#' },
+      { label: 'Privacy Policy', to: '#' },
+    ]
+  };
+
   return (
-    <footer className="bg-slate-900 border-t border-white/5 pt-16 pb-8">
+    <footer style={{ 
+      background: 'var(--bg-deep)', 
+      borderTop: '1px solid var(--border-subtle)',
+      paddingTop: '8rem',
+      paddingBottom: '3rem',
+      position: 'relative',
+      zIndex: 10
+    }}>
       <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-          {/* Brand */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1.5fr 1fr 1fr 1fr', 
+          gap: '4rem',
+          marginBottom: '6rem'
+        }} className="grid-mobile-stack">
+          
+          {/* Brand Column */}
           <div>
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Wrench size={18} className="text-white" />
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', marginBottom: '2rem' }}>
+              <div style={{ 
+                width: 44, height: 44, borderRadius: 14, 
+                background: 'var(--brand-grad)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 24px rgba(250, 204, 21, 0.25)'
+              }}>
+                <Wrench size={22} color="var(--primary)" strokeWidth={2.5} />
               </div>
-              <span className="text-xl font-bold gradient-text">Fixit</span>
+              <span style={{ fontSize: '1.8rem', fontWeight: 900, letterSpacing: '-0.05em', color: 'white' }}>
+                Fix<span style={{ color: 'var(--accent)' }}>it</span>
+              </span>
             </Link>
-            <p className="text-slate-400 text-sm leading-relaxed mb-4">
-              Your trusted home service marketplace. Connecting skilled professionals with homeowners across India.
+            <p style={{ color: 'var(--text-dim)', fontSize: '1rem', lineHeight: 1.8, marginBottom: '2.5rem', maxWidth: 300 }}>
+              Reimagining home maintenance with luxury, precision, and verified expertise. Experience the gold standard.
             </p>
-            <div className="flex gap-3">
-              {[Share2, Send, Globe, ExternalLink].map((Icon, i) => (
-                <a key={i} href="#" className="w-9 h-9 rounded-lg glass-light flex items-center justify-center text-slate-400 hover:text-indigo-400 hover:border-indigo-500/50 transition-all">
-                  <Icon size={15} />
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              {[
+                { icon: FiInstagram, href: 'https://instagram.com/derek2._.0' },
+                { icon: MessageSquare, href: 'https://wa.me/919555977917' },
+                { icon: Mail, href: 'mailto:yadavdevbrat022@gmail.com' }
+              ].map((s, i) => (
+                <a key={i} href={s.href} target="_blank" rel="noopener noreferrer" 
+                  style={{ 
+                    width: 48, height: 48, borderRadius: 14, 
+                    background: 'var(--bg-elevated)', 
+                    border: '1px solid var(--border-rich)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--text-dim)', transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.borderColor = 'var(--border-rich)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  <s.icon size={20} />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Quick Links</h4>
-            <ul className="space-y-2">
-              {['Home', 'Services', 'About Us', 'Contact', 'Blog'].map((item) => (
-                <li key={item}>
-                  <Link to="/" className="text-slate-400 hover:text-indigo-400 text-sm transition-colors">
-                    {item}
+          {/* Links Columns */}
+          {Object.entries(footerLinks).map(([title, links]) => (
+            <div key={title}>
+              <h4 style={{ color: 'white', fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '2rem' }}>{title}</h4>
+              <div style={{ display: 'grid', gap: '1.25rem' }}>
+                {links.map(l => (
+                  <Link key={l.label} to={l.to} style={{ 
+                    color: 'var(--text-dim)', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 500,
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.transform = 'translateX(6px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.transform = 'translateX(0)'; }}
+                  >
+                    {l.label}
                   </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Services */}
-          <div>
-            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Services</h4>
-            <ul className="space-y-2">
-              {['Electrical', 'Plumbing', 'Cleaning', 'Painting', 'Carpentry', 'AC Repair'].map((item) => (
-                <li key={item}>
-                  <Link to="/services" className="text-slate-400 hover:text-indigo-400 text-sm transition-colors">
-                    {item}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Contact</h4>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-slate-400 text-sm">
-                <MapPin size={15} className="text-indigo-400 flex-shrink-0" />
-                Mumbai, Maharashtra, India
-              </li>
-              <li className="flex items-center gap-3 text-slate-400 text-sm">
-                <Phone size={15} className="text-indigo-400 flex-shrink-0" />
-                +91 98765 43210
-              </li>
-              <li className="flex items-center gap-3 text-slate-400 text-sm">
-                <Mail size={15} className="text-indigo-400 flex-shrink-0" />
-                support@fixit.com
-              </li>
-            </ul>
-          </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} Fixit. All rights reserved.
-          </p>
-          <div className="flex gap-6">
-            {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((item) => (
-              <a key={item} href="#" className="text-slate-500 hover:text-slate-300 text-xs transition-colors">
-                {item}
-              </a>
-            ))}
+        {/* Bottom Section */}
+        <div style={{ 
+          borderTop: '1px solid var(--border-subtle)', 
+          paddingTop: '3rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '2rem'
+        }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+             <ShieldCheck size={18} className="text-accent" />
+             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>
+               © {currentYear} Fixit Marketplace. Secured with Advanced Encryption.
+             </p>
+          </div>
+          <div style={{ display: 'flex', gap: '3rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', display:'flex', alignItems:'center', gap:6 }}>
+               Developed with <Heart size={14} fill="#ef4444" color="#ef4444" /> for Excellence
+            </p>
           </div>
         </div>
       </div>

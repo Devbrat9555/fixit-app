@@ -1,4 +1,6 @@
 const express = require('express');
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 const http = require('http');
 const { Server } = require('socket.io');
 const dotenv = require('dotenv');
@@ -31,8 +33,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('update_location', (data) => {
-    // data should have { bookingId, lat, lng }
+    // data: { bookingId, lat, lng, type: 'user' | 'provider' }
     socket.to(data.bookingId).emit('location_update', data);
+  });
+
+  socket.on('send_chat_message', (data) => {
+    // broadcast to everyone in the room except sender
+    socket.to(data.bookingId).emit('new_chat_message', data);
+    console.log(`💬 New chat message in room ${data.bookingId}: ${data.text}`);
   });
 
   socket.on('disconnect', () => {
@@ -61,7 +69,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 min
-  max: 200,
+  max: 1000, // Increased for dev/testing
   message: { success: false, message: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,

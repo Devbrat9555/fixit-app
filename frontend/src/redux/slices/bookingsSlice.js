@@ -56,6 +56,27 @@ export const cancelBooking = createAsyncThunk('bookings/cancel', async ({ id, re
   }
 });
 
+export const fetchNearbyBookings = createAsyncThunk('bookings/nearby', async (_, thunkAPI) => {
+  try {
+    const { data } = await api.get('/bookings/nearby');
+    return data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message);
+  }
+});
+
+export const acceptBooking = createAsyncThunk('bookings/accept', async ({ id, providerLocation }, thunkAPI) => {
+  try {
+    const { data } = await api.put(`/bookings/${id}/accept`, { providerLocation });
+    toast.success('Job accepted! 🎉');
+    return data.data;
+  } catch (error) {
+    const msg = error.response?.data?.message || 'Acceptance failed';
+    toast.error(msg);
+    return thunkAPI.rejectWithValue(msg);
+  }
+});
+
 export const addReview = createAsyncThunk('bookings/addReview', async ({ id, rating, comment }, thunkAPI) => {
   try {
     const { data } = await api.post(`/bookings/${id}/review`, { rating, comment });
@@ -73,6 +94,7 @@ const bookingsSlice = createSlice({
   initialState: {
     bookings: [],
     providerBookings: [],
+    nearbyBookings: [],
     isLoading: false,
     error: null,
     total: 0,
@@ -96,6 +118,16 @@ const bookingsSlice = createSlice({
         state.total = action.payload.total;
       })
       .addCase(fetchProviderBookings.rejected, (state) => { state.isLoading = false; })
+      .addCase(fetchNearbyBookings.pending, (state) => { state.isLoading = true; })
+      .addCase(fetchNearbyBookings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.nearbyBookings = action.payload.data;
+      })
+      .addCase(fetchNearbyBookings.rejected, (state) => { state.isLoading = false; })
+      .addCase(acceptBooking.fulfilled, (state, action) => {
+        state.nearbyBookings = state.nearbyBookings.filter(b => b._id !== action.payload._id);
+        state.providerBookings.unshift(action.payload);
+      })
       .addCase(updateBookingStatus.fulfilled, (state, action) => {
         const idx = state.providerBookings.findIndex(b => b._id === action.payload._id);
         if (idx !== -1) state.providerBookings[idx] = action.payload;

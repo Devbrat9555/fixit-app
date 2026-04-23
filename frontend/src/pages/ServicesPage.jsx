@@ -5,14 +5,14 @@ import { fetchServices } from '../redux/slices/servicesSlice';
 import ServiceCard from '../components/services/ServiceCard';
 import Loader from '../components/common/Loader';
 import api from '../services/api';
-import { Search, Filter, X, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter, X, ChevronLeft, ChevronRight, SlidersHorizontal, Sparkles, LayoutGrid, MapPin, Grid } from 'lucide-react';
 
 const sortOptions = [
-  { value: '', label: 'Default' },
-  { value: 'rating', label: 'Top Rated' },
-  { value: 'popular', label: 'Most Popular' },
-  { value: 'price_asc', label: 'Price: Low to High' },
-  { value: 'price_desc', label: 'Price: High to Low' },
+  { value: '', label: 'Featured Ranking' },
+  { value: 'rating', label: 'Client Satisfaction' },
+  { value: 'popular', label: 'Trending Services' },
+  { value: 'price_asc', label: 'Investment: Low to High' },
+  { value: 'price_desc', label: 'Investment: High to Low' },
 ];
 
 const ServicesPage = () => {
@@ -53,182 +53,227 @@ const ServicesPage = () => {
   const hasActiveFilters = filters.search || filters.category || filters.minPrice || filters.maxPrice || filters.sort;
 
   return (
-    <div className="min-h-screen pt-20 pb-12">
-      <div className="container">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            All <span className="gradient-text">Services</span>
-          </h1>
-          <p className="text-slate-400">{total} services available</p>
-        </div>
-
-        {/* Search + Filter Bar */}
-        <div className="glass rounded-2xl p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-3">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+    <div className="fade-in" style={{ minHeight: '100vh', paddingBottom: '8rem' }}>
+      {/* ── SEARCH HERO ────────────────────────────────────────── */}
+      <section style={{ 
+        background: 'var(--bg-card)', 
+        padding: '6rem 0', 
+        borderBottom: '1px solid var(--border-subtle)',
+        marginBottom: '4rem',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'var(--brand-grad)', opacity:0.3 }} />
+        
+        <div className="container">
+          <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+            <div style={{ display:'inline-flex', padding:'0.5rem 1.25rem', borderRadius:99, background:'var(--accent-soft)', color:'var(--accent)', fontSize:'0.75rem', fontWeight:800, marginBottom:24, border:'1px solid var(--border-accent)', letterSpacing:'0.1em' }}>
+              <Sparkles size={16} style={{ marginRight:8 }} /> CURATED CATALOGUE
+            </div>
+            <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', marginBottom: '2rem' }}>
+              Discover <span className="gradient-text">Elite Services.</span>
+            </h1>
+            
+            {/* Search Input */}
+            <div style={{ position: 'relative', maxWidth: 700, margin: '0 auto' }}>
+              <Search size={24} style={{ position:'absolute', left:24, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }} />
               <input
                 type="text"
-                placeholder="Search services..."
+                placeholder="What masterpiece can we create for your home today?"
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="input-field pl-9"
+                className="input-field"
+                style={{ 
+                   height: 72, paddingLeft: 64, fontSize: '1.1rem', borderRadius: 24,
+                   background: 'var(--bg-deep)', border: '1px solid var(--border-rich)',
+                   boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+                }}
               />
             </div>
 
-            {/* Sort */}
-            <select
-              value={filters.sort}
-              onChange={(e) => handleFilterChange('sort', e.target.value)}
-              className="input-field md:w-48"
-            >
-              {sortOptions.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
-                showFilters ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400' : 'border-white/10 text-slate-400 hover:border-indigo-500/50'
-              }`}
-            >
-              <SlidersHorizontal size={16} />
-              Filters
-              {hasActiveFilters && (
-                <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-xs flex items-center justify-center">!</span>
-              )}
-            </button>
-
-            {hasActiveFilters && (
-              <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-slate-400 hover:text-red-400 transition-colors px-3">
-                <X size={14} /> Clear
-              </button>
-            )}
-          </div>
-
-          {/* Expanded Filters */}
-          {showFilters && (
-            <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-4 fade-in">
-              {/* Category */}
-              <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider mb-2 block">Category</label>
-                <select
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">All Categories</option>
-                  {categories.map(cat => (
-                    <option key={cat._id} value={cat._id}>{cat.icon} {cat.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Min Price */}
-              <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider mb-2 block">Min Price (₹)</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={filters.minPrice}
-                  onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                  className="input-field"
-                />
-              </div>
-
-              {/* Max Price */}
-              <div>
-                <label className="text-xs text-slate-400 uppercase tracking-wider mb-2 block">Max Price (₹)</label>
-                <input
-                  type="number"
-                  placeholder="50000"
-                  value={filters.maxPrice}
-                  onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                  className="input-field"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Category Pills */}
-          {categories.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10">
+            {/* Quick Categories */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: '3rem' }}>
               <button
                 onClick={() => handleFilterChange('category', '')}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  !filters.category ? 'bg-indigo-500 text-white' : 'glass-light text-slate-400 hover:text-white'
-                }`}
+                style={{ 
+                  padding: '0.75rem 1.75rem', borderRadius: 14, fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer',
+                  background: !filters.category ? 'var(--accent)' : 'var(--bg-elevated)',
+                  color: !filters.category ? 'var(--primary)' : 'var(--text-dim)',
+                  border: !filters.category ? 'none' : '1px solid var(--border-rich)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
               >
-                All
+                All Expertise
               </button>
               {categories.map(cat => (
                 <button
                   key={cat._id}
                   onClick={() => handleFilterChange('category', cat._id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    filters.category === cat._id ? 'bg-indigo-500 text-white' : 'glass-light text-slate-400 hover:text-white'
-                  }`}
+                  style={{ 
+                    padding: '0.75rem 1.75rem', borderRadius: 14, fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer',
+                    background: filters.category === cat._id ? 'var(--accent)' : 'var(--bg-elevated)',
+                    color: filters.category === cat._id ? 'var(--primary)' : 'var(--text-dim)',
+                    border: filters.category === cat._id ? 'none' : '1px solid var(--border-rich)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
                 >
-                  {cat.icon} {cat.name}
+                  <span style={{ marginRight:8 }}>{cat.icon}</span> {cat.name}
                 </button>
               ))}
             </div>
-          )}
+          </div>
+        </div>
+      </section>
+
+      <div className="container">
+        {/* ── TOOLBAR ────────────────────────────────────────── */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3rem', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width:56, height:56, borderRadius:16, background: 'var(--accent-soft)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Grid size={24} className="text-accent" />
+            </div>
+            <div>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing:'0.1em' }}>SERVICE REPOSITORY</p>
+              <h3 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{total} Available</h3>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ position:'relative' }}>
+               <select
+                 value={filters.sort}
+                 onChange={(e) => handleFilterChange('sort', e.target.value)}
+                 className="input-field"
+                 style={{ width: 240, height: 56, fontSize: '0.9rem', paddingRight:40, background:'var(--bg-card)', border:'1px solid var(--border-rich)', fontWeight:700 }}
+               >
+                 {sortOptions.map(o => (
+                   <option key={o.value} value={o.value}>{o.label}</option>
+                 ))}
+               </select>
+            </div>
+            
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="btn btn-outline"
+              style={{ 
+                height: 56, padding: '0 2rem', borderRadius: 16, 
+                borderColor: showFilters ? 'var(--accent)' : 'var(--border-rich)',
+                color: showFilters ? 'var(--accent)' : 'white',
+                background: showFilters ? 'var(--accent-soft)' : 'transparent',
+                gap: 10
+              }}
+            >
+              <SlidersHorizontal size={18} /> Filters
+              {hasActiveFilters && <div style={{ width:6, height:6, borderRadius:999, background:'var(--accent)' }} />}
+            </button>
+          </div>
         </div>
 
-        {/* Services Grid */}
+        {/* ── FILTERS PANEL ───────────────────────────────────── */}
+        {showFilters && (
+          <div className="glass-card reveal-up" style={{ 
+            padding: '3rem', marginBottom: '4rem',
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 32
+          }}>
+             <div>
+                <label style={{ fontSize:'0.7rem', fontWeight:800, color:'var(--text-muted)', marginBottom:12, display:'block', letterSpacing:'0.1em' }}>MINIMUM INVESTMENT</label>
+                <div style={{ position:'relative' }}>
+                   <span style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', fontWeight:800 }}>₹</span>
+                   <input
+                     type="number" placeholder="0"
+                     value={filters.minPrice}
+                     onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                     className="input-field"
+                     style={{ paddingLeft:32 }}
+                   />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize:'0.7rem', fontWeight:800, color:'var(--text-muted)', marginBottom:12, display:'block', letterSpacing:'0.1em' }}>MAXIMUM INVESTMENT</label>
+                <div style={{ position:'relative' }}>
+                   <span style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', fontWeight:800 }}>₹</span>
+                   <input
+                     type="number" placeholder="50,000"
+                     value={filters.maxPrice}
+                     onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                     className="input-field"
+                     style={{ paddingLeft:32 }}
+                   />
+                </div>
+              </div>
+              <div style={{ display:'flex', alignItems:'flex-end' }}>
+                <button 
+                  onClick={clearFilters}
+                  className="btn btn-outline"
+                  style={{ 
+                    height: 56, width: '100%', borderRadius: 16, 
+                    color: 'var(--error)', border:'1px solid rgba(239,68,68,0.2)',
+                    background: 'rgba(239,68,68,0.05)'
+                  }}
+                >
+                  Clear Selection
+                </button>
+              </div>
+          </div>
+        )}
+
+        {/* ── RESULTS ────────────────────────────────────────── */}
         {isLoading ? (
-          <Loader />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '10rem 0' }}>
+            <Loader />
+          </div>
         ) : services.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {services.map(service => (
-                <ServiceCard key={service._id} service={service} />
+            <div className="grid-auto">
+              {services.map((service, index) => (
+                <div key={service._id} className="reveal-up" style={{ animationDelay: `${index * 0.05}s` }}>
+                  <ServiceCard service={service} />
+                </div>
               ))}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-3 mt-12">
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: '6rem' }}>
                 <button
                   onClick={() => handleFilterChange('page', filters.page - 1)}
                   disabled={filters.page === 1}
-                  className="p-2 rounded-lg glass-light disabled:opacity-30 hover:bg-indigo-500/10 transition-colors"
+                  className="btn btn-outline"
+                  style={{ 
+                    width: 56, height: 56, borderRadius: 16, padding:0,
+                    opacity: filters.page === 1 ? 0.2 : 1,
+                    cursor: filters.page === 1 ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={24} />
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => handleFilterChange('page', page)}
-                    className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
-                      page === filters.page ? 'bg-indigo-500 text-white' : 'glass-light text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+                
+                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing:'0.1em' }}>
+                  PAGE <span style={{ color: 'white' }}>{filters.page}</span> / {totalPages}
+                </span>
+
                 <button
                   onClick={() => handleFilterChange('page', filters.page + 1)}
                   disabled={filters.page === totalPages}
-                  className="p-2 rounded-lg glass-light disabled:opacity-30 hover:bg-indigo-500/10 transition-colors"
+                  className="btn btn-outline"
+                  style={{ 
+                    width: 56, height: 56, borderRadius: 16, padding:0,
+                    opacity: filters.page === totalPages ? 0.2 : 1,
+                    cursor: filters.page === totalPages ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  <ChevronRight size={18} />
+                  <ChevronRight size={24} />
                 </button>
               </div>
             )}
           </>
         ) : (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-white mb-2">No services found</h3>
-            <p className="text-slate-400 mb-6">Try adjusting your search or filters</p>
-            <button onClick={clearFilters} className="btn-primary">
-              Clear Filters
+          <div className="glass-card" style={{ textAlign: 'center', padding: '10rem 2rem' }}>
+            <Search size={64} color="var(--text-muted)" style={{ marginBottom: 24, opacity:0.2 }} />
+            <h2 style={{ fontSize: '2rem', marginBottom: 12 }}>No Matching Services</h2>
+            <p style={{ color: 'var(--text-muted)', maxWidth: 450, margin: '0 auto 40px' }}>We couldn't find any results for your current criteria. Try adjusting your search or clearing filters.</p>
+            <button onClick={clearFilters} className="btn btn-primary" style={{ padding: '1rem 3rem' }}>
+              Reset All Filters
             </button>
           </div>
         )}

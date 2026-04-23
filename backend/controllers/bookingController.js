@@ -4,9 +4,21 @@ const Service = require('../models/Service');
 const User = require('../models/User');
 const { createNotification } = require('./notificationController');
 
+const sendSMS = require('../utils/sendSMS');
+const sendEmail = require('../utils/sendEmail');
+
 // ── Create booking ────────────────────────────────────────────────────────────
 const createBooking = asyncHandler(async (req, res) => {
-  const { serviceId, scheduledDate, scheduledTime, address, notes, paymentMethod, isUrgent, razorpayOrderId, razorpayPaymentId } = req.body;
+  const { 
+    serviceId, scheduledDate, scheduledTime, address, notes, 
+    paymentMethod, isUrgent, razorpayOrderId, razorpayPaymentId, 
+    providerId, userLocation 
+  } = req.body;
+
+  if (req.user.role !== 'user') {
+    res.status(403);
+    throw new Error('Expert accounts cannot book services. Please use a customer account.');
+  }
 
   const service = await Service.findById(serviceId).populate('provider', 'name');
   if (!service) { res.status(404); throw new Error('Service not found'); }
@@ -18,7 +30,7 @@ const createBooking = asyncHandler(async (req, res) => {
 
   const booking = await Booking.create({
     user: req.user._id,
-    provider: service.provider._id,
+    provider: providerId || null,
     service: serviceId,
     scheduledDate,
     scheduledTime,
@@ -29,29 +41,72 @@ const createBooking = asyncHandler(async (req, res) => {
     platformFee,
     providerPayout,
     isUrgent: isUrgent || false,
-    status: paymentMethod === 'online' ? 'confirmed' : 'pending',
+    status: 'pending',
+    userLocation: userLocation || null,
     paymentStatus: paymentMethod === 'online' ? 'paid' : 'pending',
     razorpayOrderId,
     razorpayPaymentId,
-    timeline: [{ status: paymentMethod === 'online' ? 'confirmed' : 'pending', note: 'Booking created by customer' }],
+    timeline: [{ 
+      status: 'pending', 
+      note: providerId ? `Direct request sent to professional` : 'Booking broadcasted to nearby providers' 
+    }],
   });
+
+  // ── Notify Provider ──────────────────────────────────────────────────
+  if (booking.provider) {
+    const provider = await User.findById(booking.provider);
+    if (provider) {
+      // Internal Notification
+      await createNotification({
+        recipient: provider._id,
+        type: 'new_booking',
+        title: 'New Booking Request 📩',
+        message: `You have a new booking request for ${service.title} from ${req.user.name}`,
+        data: { bookingId: booking._id },
+        icon: '📩'
+      });
+
+      // External Notifications (SMS & Email)
+      sendSMS(provider.phone, `Fixit: New job request for ${service.title} from ${req.user.name}. View in dashboard.`);
+      
+      try {
+        await sendEmail({
+          email: provider.email,
+          subject: 'New Job Request - Fixit',
+          message: `Hi ${provider.name}, you have a new job request for ${service.title}.`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+              <h2 style="color: #6366f1;">New Job Request! 📩</h2>
+              <p>Hi <strong>${provider.name}</strong>,</p>
+              <p>You have received a new booking request from <strong>${req.user.name}</strong>.</p>
+              <div style="background: #fdfdfd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f0f0f0;">
+                <p style="margin: 0;"><strong>Service:</strong> ${service.title}</p>
+                <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
+                <p style="margin: 5px 0;"><strong>Time:</strong> ${scheduledTime}</p>
+                <p style="margin: 5px 0;"><strong>Location:</strong> ${address.street}, ${address.city}</p>
+              </div>
+              <p>Please login to your dashboard to accept or reject this request.</p>
+              <a href="http://localhost:5173/provider/dashboard" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Dashboard</a>
+            </div>
+          `
+        });
+      } catch (err) {
+        console.error('Provider email failed:', err.message);
+      }
+    }
+  }
 
   await Service.findByIdAndUpdate(serviceId, { $inc: { totalBookings: 1 } });
 
+  // Emit socket event to notify all providers
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('new_booking_broadcast', { bookingId: booking._id, service: service.title });
+  }
+
   const populatedBooking = await Booking.findById(booking._id)
     .populate('service', 'title price image')
-    .populate('provider', 'name phone avatar')
     .populate('user', 'name phone');
-
-  // Notify provider
-  await createNotification({
-    recipient: service.provider._id,
-    type: 'booking_created',
-    title: 'New Booking Request 📋',
-    message: `${req.user.name} has requested "${service.title}" on ${new Date(scheduledDate).toLocaleDateString('en-IN')}`,
-    data: { bookingId: booking._id },
-    icon: '📋',
-  });
 
   res.status(201).json({ success: true, data: populatedBooking });
 });
@@ -138,7 +193,12 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
   const isAdmin = req.user.role === 'admin';
   if (!isProvider && !isAdmin) { res.status(403); throw new Error('Not authorized'); }
 
-  const providerAllowed = { pending: ['confirmed', 'rejected'], confirmed: ['in_progress', 'cancelled'], in_progress: ['completed'] };
+  const providerAllowed = { 
+    pending: ['accepted', 'rejected'], 
+    accepted: ['on_the_way', 'cancelled'], 
+    on_the_way: ['arrived', 'cancelled'], 
+    arrived: ['completed'] 
+  };
   if (isProvider && !isAdmin) {
     const allowed = providerAllowed[booking.status];
     if (!allowed?.includes(status)) {
@@ -148,7 +208,7 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
 
   booking.status = status;
   if (cancellationReason) booking.cancellationReason = cancellationReason;
-  booking.timeline.push({ status, note: note || `Status updated to ${status}` });
+  booking.timeline.push({ status, note: note || `Status updated to ${status.replace('_', ' ')}` });
 
   // Handle earnings when completed
   if (status === 'completed') {
@@ -167,11 +227,12 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
 
   // Notifications
   const notifMap = {
-    confirmed: { type: 'booking_confirmed', title: 'Booking Confirmed ✅', icon: '✅', msg: `Your booking for "${booking.service?.title}" has been confirmed!` },
-    rejected:  { type: 'booking_rejected',  title: 'Booking Rejected ❌', icon: '❌', msg: `Your booking for "${booking.service?.title}" was rejected.` },
-    in_progress: { type: 'booking_started', title: 'Service Started 🔧', icon: '🔧', msg: `Your service "${booking.service?.title}" has started.` },
-    completed: { type: 'booking_completed', title: 'Service Completed 🎉', icon: '🎉', msg: `"${booking.service?.title}" completed. Please leave a review!` },
-    cancelled: { type: 'booking_cancelled', title: 'Booking Cancelled', icon: '❌', msg: `Booking for "${booking.service?.title}" was cancelled.` },
+    accepted:    { type: 'booking_accepted',  title: 'Booking Accepted ✅', icon: '✅', msg: `Expert is assigned for "${booking.service?.title}"!` },
+    on_the_way:  { type: 'expert_on_way',     title: 'Expert On The Way 🛵', icon: '🛵', msg: `Your professional is heading towards your location.` },
+    arrived:     { type: 'expert_arrived',    title: 'Expert Arrived 📍', icon: '📍', msg: `Your professional has arrived at the location.` },
+    completed:   { type: 'booking_completed', title: 'Service Completed 🎉', icon: '🎉', msg: `"${booking.service?.title}" completed. Please leave a review!` },
+    rejected:    { type: 'booking_rejected',  title: 'Booking Rejected ❌', icon: '❌', msg: `Your booking for "${booking.service?.title}" was rejected.` },
+    cancelled:   { type: 'booking_cancelled', title: 'Booking Cancelled',   icon: '❌', msg: `Booking for "${booking.service?.title}" was cancelled.` },
   };
 
   if (notifMap[status]) {
@@ -183,6 +244,16 @@ const updateBookingStatus = asyncHandler(async (req, res) => {
     .populate('service', 'title price image')
     .populate('provider', 'name phone avatar')
     .populate('user', 'name phone');
+
+  // Emit socket event for real-time update
+  const io = req.app.get('io');
+  if (io) {
+    io.to(booking._id.toString()).emit('status_updated', { 
+      status: status, 
+      bookingId: booking._id,
+      note: note || `Status updated to ${status.replace('_', ' ')}`
+    });
+  }
 
   res.status(200).json({ success: true, data: updated });
 });
@@ -303,6 +374,93 @@ const getProviderEarnings = asyncHandler(async (req, res) => {
   });
 });
 
+// ── Get nearby unassigned bookings ──────────────────────────────────────────
+const getNearbyBookings = asyncHandler(async (req, res) => {
+  // Find bookings pending acceptance where no specific provider is assigned (broadcasts)
+  const bookings = await Booking.find({ 
+    status: 'pending',
+    provider: null 
+  })
+    .populate('service', 'title price image category')
+    .populate('user', 'name phone avatar address')
+    .sort('-createdAt')
+    .limit(50); // limit to recent
+
+  res.status(200).json({
+    success: true,
+    count: bookings.length,
+    data: bookings,
+  });
+});
+
+// ── Accept broadcasted booking ──────────────────────────────────────────────
+const acceptBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id)
+    .populate('user', 'name')
+    .populate('service', 'title');
+
+  if (!booking) { res.status(404); throw new Error('Booking not found'); }
+  if (booking.status !== 'pending') {
+    res.status(400); throw new Error('Booking is no longer available');
+  }
+
+  // Assign provider and update status
+  booking.provider = req.user._id;
+  booking.status = 'accepted';
+  if (req.body.providerLocation) {
+    booking.providerLocation = req.body.providerLocation;
+  }
+  booking.timeline.push({ status: 'accepted', note: `Accepted by provider ${req.user.name}` });
+  await booking.save();
+
+  // Notify User (Internal, SMS, Email)
+  await createNotification({
+    recipient: booking.user._id,
+    type: 'booking_accepted',
+    title: 'Provider Found! 🎉',
+    message: `${req.user.name} has accepted your booking for "${booking.service.title}".`,
+    data: { bookingId: booking._id },
+    icon: '✅',
+  });
+
+  // Mock External Notifications
+  const user = await User.findById(booking.user._id);
+  if (user) {
+    sendSMS(user.phone, `Fixit: ${req.user.name} has accepted your booking for ${booking.service.title}. Tracking link: http://fixit.com/tracking/${booking._id}`);
+    
+    // Real Email Notification
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Provider Found - Fixit',
+        message: `Hi ${user.name}, ${req.user.name} is assigned to your booking. Check your dashboard for live tracking.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; borderRadius: 10px;">
+            <h2 style="color: #6366f1;">Provider Found! 🎉</h2>
+            <p>Hi <strong>${user.name}</strong>,</p>
+            <p>Great news! <strong>${req.user.name}</strong> has accepted your booking for <strong>${booking.service.title}</strong>.</p>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0;"><strong>Scheduled For:</strong> ${new Date(booking.scheduledDate).toLocaleDateString()} at ${booking.scheduledTime}</p>
+            </div>
+            <p>You can track your professional in real-time on your dashboard.</p>
+            <a href="http://localhost:5173/dashboard" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Go to Dashboard</a>
+          </div>
+        `
+      });
+    } catch (err) {
+      console.error('Email failed:', err.message);
+    }
+  }
+
+  // Emit socket event to specific user
+  const io = req.app.get('io');
+  if (io) {
+    io.to(booking._id.toString()).emit('booking_accepted', { provider: req.user.name, bookingId: booking._id });
+  }
+
+  res.status(200).json({ success: true, message: 'Booking accepted', data: booking });
+});
+
 module.exports = {
   createBooking,
   getMyBookings,
@@ -313,4 +471,6 @@ module.exports = {
   addReview,
   toggleAvailability,
   getProviderEarnings,
+  getNearbyBookings,
+  acceptBooking,
 };

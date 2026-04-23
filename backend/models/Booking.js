@@ -17,7 +17,7 @@ const timelineSchema = new mongoose.Schema({
 const bookingSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    provider: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    provider: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
 
     scheduledDate: { type: Date, required: [true, 'Scheduled date is required'] },
@@ -32,12 +32,21 @@ const bookingSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rejected'],
+      enum: ['pending', 'accepted', 'on_the_way', 'arrived', 'completed', 'cancelled', 'rejected'],
       default: 'pending',
     },
 
     // Status timeline for tracking
     timeline: [timelineSchema],
+
+    userLocation: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+    providerLocation: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
 
     totalAmount: { type: Number, required: true },
 
