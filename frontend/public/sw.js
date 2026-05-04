@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fixit-v4';
+const CACHE_NAME = 'fixit-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -35,16 +35,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests and avoid API calls for now to prevent issues with Clerk
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+  const url = event.request.url;
+  
+  // Skip API and non-GET
+  if (event.request.method !== 'GET' || url.includes('/api/')) return;
+
+  // Hashed assets (index-XXXX.js/css) should always be fetched fresh if not found
+  // to avoid 404s during new deployments.
+  if (url.includes('index-')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => {
-        // Fallback for offline if necessary
-      });
+      return response || fetch(event.request);
     })
   );
 });

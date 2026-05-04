@@ -18,13 +18,19 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       // Force reload if hashed assets return 404
+      // Force reload if hashed assets return 404 (common in Vercel deploys)
       window.addEventListener('error', (e) => {
-        if (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
-          const lastReload = localStorage.getItem('last_asset_reload');
-          const now = Date.now();
-          if (!lastReload || (now - lastReload > 10000)) { // Max once every 10s
-            localStorage.setItem('last_asset_reload', now);
-            window.location.reload();
+        const target = e.target;
+        if (target.tagName === 'SCRIPT' || target.tagName === 'LINK') {
+          const url = target.src || target.href;
+          if (url && url.includes('index-')) {
+            const lastReload = sessionStorage.getItem('last_asset_reload');
+            const now = Date.now();
+            if (!lastReload || (now - parseInt(lastReload) > 5000)) {
+              sessionStorage.setItem('last_asset_reload', now.toString());
+              console.warn('Asset 404 detected, forcing refresh to get new build...');
+              window.location.reload();
+            }
           }
         }
       }, true);
