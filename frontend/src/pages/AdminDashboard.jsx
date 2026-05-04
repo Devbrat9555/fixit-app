@@ -8,7 +8,7 @@ import {
   Users, Package, Calendar, TrendingUp, CheckCircle, XCircle, 
   Shield, Settings, Search, Trash2, ToggleLeft, ToggleRight, 
   Plus, BarChart3, Sparkles, LayoutGrid, ShieldCheck, UserCheck, 
-  ChevronRight, ArrowUpRight, Star, Briefcase, AlertCircle, XCircle
+  ChevronRight, ArrowUpRight, Star, Briefcase, AlertCircle
 } from 'lucide-react';
 
 const AdminDashboard = () => {
