@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import store from './redux/store';
 import { ClerkProvider, SignIn, SignUp } from '@clerk/clerk-react';
 import ClerkSync from './components/common/ClerkSync';
+import InstallPWA from './components/common/InstallPWA';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -38,6 +39,7 @@ const App = () => {
       <Provider store={store}>
         <BrowserRouter>
           <ClerkSync />
+          <InstallPWA />
           <Toaster
           position="top-right"
           toastOptions={{

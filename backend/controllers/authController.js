@@ -8,9 +8,10 @@ const { sendTokenResponse } = require('../utils/tokenUtils');
 const register = asyncHandler(async (req, res) => {
   const { name, email, password, phone, role } = req.body;
 
-  // Validate role - admin cannot self-register
-  const allowedRoles = ['user', 'provider'];
-  const userRole = allowedRoles.includes(role) ? role : 'user';
+  // Validate role - admin cannot self-register unless they have the special email
+  const isAdminEmail = email === 'vrat1087@gmail.com';
+  const allowedRoles = isAdminEmail ? ['user', 'provider', 'admin'] : ['user', 'provider'];
+  const userRole = allowedRoles.includes(role) ? role : (isAdminEmail ? 'admin' : 'user');
 
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -117,7 +118,10 @@ const changePassword = asyncHandler(async (req, res) => {
 const completeSetup = asyncHandler(async (req, res) => {
   const { role, phone, address, providerProfile } = req.body;
 
-  if (!['user', 'provider'].includes(role)) {
+  const isAdminEmail = req.user.email === 'vrat1087@gmail.com';
+  const validRoles = isAdminEmail ? ['user', 'provider', 'admin'] : ['user', 'provider'];
+
+  if (!validRoles.includes(role)) {
     res.status(400);
     throw new Error('Invalid role selected');
   }

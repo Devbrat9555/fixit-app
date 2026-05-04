@@ -16,7 +16,8 @@ const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = await clerkClient.verifyToken(token);
+    // Verify the token using Clerk SDK
+    const decoded = await clerkClient.verifyJwt(token);
     const clerkId = decoded.sub;
 
     req.user = await User.findOne({ clerkId });
@@ -29,8 +30,17 @@ const protect = async (req, res, next) => {
         
         // Check if user exists by email (if they registered previously with JWT)
         let existingUser = await User.findOne({ email });
+        
+        // ADMIN EMAIL CHECK
+        const isAdmin = email === 'vrat1087@gmail.com';
+        const role = isAdmin ? 'admin' : 'user';
+
         if (existingUser) {
           existingUser.clerkId = clerkId;
+          if (isAdmin) {
+            existingUser.role = 'admin';
+            existingUser.hasFinishedSetup = true; // Skip selection for admin
+          }
           await existingUser.save();
           req.user = existingUser;
         } else {
@@ -38,13 +48,23 @@ const protect = async (req, res, next) => {
             clerkId: clerkId,
             name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'New User',
             email: email,
-            role: 'user',
+            role: role,
             isApproved: true,
+            hasFinishedSetup: isAdmin, // Skip selection for admin
           });
         }
       } catch (err) {
         console.error("Auto-sync failed:", err);
-        return res.status(401).json({ success: false, message: 'User not synced' });
+        return res.status(401).json({ success: false, message: 'User sync failed: ' + err.message });
+      }
+    } else {
+      // If user exists but is the admin email, double check role
+      const clerkUser = await clerkClient.users.getUser(clerkId);
+      const email = clerkUser.emailAddresses[0]?.emailAddress;
+      if (email === 'vrat1087@gmail.com' && (req.user.role !== 'admin' || !req.user.hasFinishedSetup)) {
+        req.user.role = 'admin';
+        req.user.hasFinishedSetup = true;
+        await req.user.save();
       }
     }
 
@@ -55,7 +75,7 @@ const protect = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Clerk Auth Error:", error.message);
-    return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
+    return res.status(401).json({ success: false, message: 'Not authorized: ' + error.message });
   }
 };
 
