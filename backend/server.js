@@ -24,6 +24,32 @@ const allowedOrigins = [
 
 const app = express();
 
+// Manual CORS Middleware (Handles Preflight & Main requests)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:3000',
+    'https://frontend-tau-virid-40.vercel.app',
+    'https://frontend-tau-virid-40.vercel.app/'
+  ];
+  
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-clerk-auth-token');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -33,10 +59,7 @@ app.use(cors({
     'https://frontend-tau-virid-40.vercel.app',
     'https://frontend-tau-virid-40.vercel.app/'
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  credentials: true,
-  optionsSuccessStatus: 200
+  credentials: true
 }));
 
 const httpServer = http.createServer(app);
