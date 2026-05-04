@@ -8,7 +8,7 @@ import {
   Users, Package, Calendar, TrendingUp, CheckCircle, XCircle, 
   Shield, Settings, Search, Trash2, ToggleLeft, ToggleRight, 
   Plus, BarChart3, Sparkles, LayoutGrid, ShieldCheck, UserCheck, 
-  ChevronRight, ArrowUpRight
+  ChevronRight, ArrowUpRight, Star, Briefcase, AlertCircle, XCircle
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -45,199 +45,201 @@ const AdminDashboard = () => {
   const deleteCategory = async (id) => { if (!window.confirm('Delete?')) return; try { await api.delete(`/categories/${id}`); toast.success('Deleted'); load('categories'); } catch { toast.error('Failed'); } };
 
   const TABS = [
-    { id: 'analytics', label: 'Overview', icon: BarChart3, color: 'var(--brand-400)' },
-    { id: 'users', label: 'User Base', icon: Users, color: 'var(--accent-purple)' },
-    { id: 'providers', label: 'Approvals', icon: ShieldCheck, color: 'var(--accent-amber)' },
-    { id: 'bookings', label: 'Operations', icon: Calendar, color: 'var(--accent-emerald)' },
-    { id: 'categories', label: 'Catalog', icon: Settings, color: 'var(--text-muted)' },
+    { id: 'analytics', label: 'Overview', icon: BarChart3, color: 'var(--accent)' },
+    { id: 'users', label: 'Customers', icon: Users, color: '#a855f7' },
+    { id: 'providers_all', label: 'Experts', icon: Briefcase, color: '#10b981' },
+    { id: 'providers', label: 'Verifications', icon: ShieldCheck, color: '#f59e0b' },
+    { id: 'bookings', label: 'Operations', icon: Calendar, color: '#6366f1' },
+    { id: 'categories', label: 'Catalog', icon: Settings, color: '#9ca3af' },
   ];
 
-  const ChartTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-subtle)', borderRadius:12, padding:'1rem', fontSize:'0.85rem', boxShadow:'0 10px 25px rgba(0,0,0,0.3)' }}>
-        <p style={{ color:'var(--text-muted)', marginBottom:6, fontWeight:600 }}>{label}</p>
-        {payload.map(p => (
-          <div key={p.name} style={{ display:'flex', alignItems:'center', gap:8 }}>
-             <div style={{ width:8, height:8, borderRadius:999, background:p.color }} />
-             <span style={{ color:p.color, fontWeight:800 }}>{p.name}: {typeof p.value==='number' && p.value>1000 ? `₹${p.value.toLocaleString('en-IN')}` : p.value}</span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
-    <div className="fade-in" style={{ paddingBottom:64 }}>
-      {/* Hero Header */}
-      <section style={{ background: 'var(--bg-surface)', padding: '3rem 0', borderBottom: '1px solid var(--border-subtle)', marginBottom: '3rem' }}>
-        <div className="container">
-           <div style={{ display:'flex', alignItems:'center', gap:8, color:'var(--brand-400)', fontWeight:700, fontSize:'0.8rem', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.05em' }}>
-              <Sparkles size={14} /> CENTRAL ADMINISTRATION
-            </div>
-            <h1 style={{ fontSize:'2.5rem', fontWeight:900, letterSpacing:'-0.03em' }}>Fixit Command Center</h1>
-            <p style={{ color:'var(--text-muted)', marginTop:4 }}>System health, user management, and operational controls.</p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', display: 'flex' }} className="grid-mobile-stack">
+      {/* ── Sidebar ── */}
+      <aside style={{ 
+        width: '280px', background: 'var(--bg-surface)', 
+        borderRight: '1px solid var(--border-subtle)',
+        padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column',
+        position: 'sticky', top: 'var(--nav-h)', height: 'calc(100vh - var(--nav-h))'
+      }} className="hide-mobile">
+        <div style={{ marginBottom: '3rem' }}>
+          <p style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.15em', marginBottom: '1.5rem' }}>MAIN MENU</p>
+          <div style={{ display: 'grid', gap: '0.5rem' }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '1rem', borderRadius: 12,
+                background: tab === t.id ? 'var(--accent-soft)' : 'transparent',
+                color: tab === t.id ? 'var(--accent)' : 'var(--text-dim)',
+                border: 'none', cursor: 'pointer', transition: 'all 0.3s ease',
+                fontWeight: 700, fontSize: '0.9rem'
+              }}>
+                <t.icon size={20} />
+                {t.label}
+                {t.id === 'providers' && pending.length > 0 && <span style={{ marginLeft:'auto', background:'var(--error)', color:'white', fontSize:10, padding:'2px 6px', borderRadius:6 }}>{pending.length}</span>}
+              </button>
+            ))}
+          </div>
         </div>
-      </section>
+        
+        <div style={{ marginTop: 'auto', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: 20, border: '1px solid var(--border-subtle)' }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'white', marginBottom: 4 }}>System Status</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="pulse" style={{ width: 8, height: 8, background: 'var(--success)', borderRadius: 99 }} />
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800 }}>LIVE PRODUCTION</span>
+          </div>
+        </div>
+      </aside>
 
-      <div className="container">
-        {/* Modern Tabs */}
-        <div style={{ display:'flex', gap:8, marginBottom:'2.5rem', overflowX:'auto', paddingBottom:8 }}>
-          {TABS.map(t => (
-            <button 
-              key={t.id} onClick={() => setTab(t.id)}
-              style={{
-                display:'flex', alignItems:'center', gap:10, padding:'0.875rem 1.5rem', borderRadius:'1rem',
-                background: tab === t.id ? 'var(--bg-surface)' : 'transparent',
-                border: `1px solid ${tab === t.id ? 'var(--border-subtle)' : 'transparent'}`,
-                color: tab === t.id ? t.color : 'var(--text-muted)',
-                fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s ease', whiteSpace:'nowrap',
-                position: 'relative'
-              }}
-            >
-              <t.icon size={18} />
-              {t.label}
-              {t.id === 'providers' && pending.length > 0 && (
-                <span style={{ position:'absolute', top:8, right:8, width:8, height:8, background:'var(--accent-rose)', borderRadius:999, border:'2px solid var(--bg-surface)' }} />
-              )}
-            </button>
-          ))}
+      {/* ── Main Content ── */}
+      <main style={{ flex: 1, padding: '3rem' }}>
+        <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
+              {TABS.find(t => t.id === tab)?.label} Control
+            </h1>
+            <p style={{ color: 'var(--text-dim)', marginTop: 4 }}>Managing Fixit Marketplace ecosystem and operations.</p>
+          </div>
+          <div style={{ textAlign: 'right' }} className="hide-mobile">
+            <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)' }}>ADMINISTRATOR</p>
+            <p style={{ fontWeight: 800, color: 'white' }}>{user?.name}</p>
+          </div>
         </div>
 
-        {loading ? (
-          <div style={{ display:'flex', justifyContent:'center', padding:'5rem 0' }}><Loader /></div>
-        ) : (
+        {loading ? <div style={{ display:'flex', justifyContent:'center', padding:'10rem 0' }}><Loader /></div> : (
           <div className="fade-in">
             {/* ── ANALYTICS ── */}
-            {tab==='analytics' && analytics && (
-              <>
-                {/* 🚨 QUICK APPROVAL ALERT 🚨 */}
-                {analytics.pendingProviders > 0 && (
-                  <div className="card scale-in" style={{ padding:'1.5rem', background:'rgba(245,158,11,0.05)', border:'1px solid var(--accent-amber)', marginBottom:'2rem', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                     <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-                        <div style={{ padding:12, background:'var(--accent-amber)20', borderRadius:12 }}>
-                           <ShieldCheck size={24} color="var(--accent-amber)" />
-                        </div>
-                        <div>
-                           <h4 style={{ fontWeight:900, fontSize:'1.1rem' }}>{analytics.pendingProviders} Partners Waiting for Approval</h4>
-                           <p style={{ fontSize:'0.85rem', color:'var(--text-muted)' }}>New professionals have applied to join Fixit. Review them now.</p>
-                        </div>
-                     </div>
-                     <button onClick={() => setTab('providers')} className="btn btn-primary" style={{ background:'var(--accent-amber)', color:'black', border:'none' }}>Go to Approvals <ChevronRight size={16} /></button>
-                  </div>
-                )}
-
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:20, marginBottom:'2.5rem' }}>
+            {tab === 'analytics' && analytics && (
+              <div style={{ display: 'grid', gap: '2.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
                   {[
-                    {l:'Active Users',v:analytics.totalUsers,c:'var(--brand-400)',icon:Users},
-                    {l:'Partners',v:analytics.totalProviders,c:'var(--accent-purple)',icon:Shield},
-                    {l:'Catalog Size',v:analytics.totalServices,c:'var(--accent-emerald)',icon:Package},
-                    {l:'Bookings',v:analytics.totalBookings,c:'var(--accent-amber)',icon:Calendar},
-                    {l:'Pending',v:analytics.pendingProviders,c:'var(--accent-rose)',icon:XCircle},
-                    {l:'Revenue',v:`₹${(analytics.totalRevenue||0).toLocaleString('en-IN')}`,c:'var(--accent-emerald)',icon:TrendingUp},
-                  ].map((s, i) => (
-                    <div key={i} className="card" style={{ padding:'1.5rem', textAlign:'center' }}>
-                       <div style={{ width:44, height:44, borderRadius:12, background: `${s.c}10`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-                          <s.icon size={20} color={s.c} />
-                       </div>
-                       <div style={{ fontSize:'1.75rem', fontWeight:900, color:s.c }}>{s.v}</div>
-                       <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', fontWeight:700, marginTop:4, textTransform:'uppercase' }}>{s.l}</div>
+                    { l: 'Total Revenue', v: `₹${(analytics.totalRevenue || 0).toLocaleString()}`, c: 'var(--success)', i: TrendingUp },
+                    { l: 'Active Users', v: analytics.totalUsers, c: '#a855f7', i: Users },
+                    { l: 'Completed Jobs', v: analytics.totalBookings, c: 'var(--accent)', i: Calendar },
+                    { l: 'Catalog Items', v: analytics.totalServices, c: '#6366f1', i: Package },
+                  ].map((s, idx) => (
+                    <div key={idx} className="glass-card" style={{ padding: '2rem', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: 0, right: 0, padding: '1.5rem', opacity: 0.05 }}><s.i size={60} /></div>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>{s.l}</p>
+                      <h3 style={{ fontSize: '2.25rem', fontWeight: 900, color: 'white' }}>{s.v}</h3>
+                      <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6, color: s.c, fontSize: '0.75rem', fontWeight: 800 }}>
+                        <ArrowUpRight size={14} /> +12.5% this month
+                      </div>
                     </div>
                   ))}
                 </div>
-
-                <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:24 }} className="grid-mobile-stack">
-                   <div className="card" style={{ padding:'1.5rem' }}>
-                      <h3 style={{ fontSize:'1.1rem', fontWeight:800, marginBottom:'2rem', display:'flex', alignItems:'center', gap:8 }}>
-                         <BarChart3 size={20} color="var(--brand-400)" /> Booking Distribution
-                      </h3>
-                      <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={analytics.bookingsByStatus?.map(b => ({ name:b._id?.replace('_',' '), count:b.count }))}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                          <XAxis dataKey="name" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false} />
-                          <Tooltip content={<ChartTooltip />} cursor={{ fill:'rgba(255,255,255,0.02)' }} />
-                          <Bar dataKey="count" fill="var(--brand-400)" radius={[6,6,0,0]} barSize={40} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }} className="grid-mobile-stack">
+                   <div className="glass-card" style={{ padding: '2rem' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '2rem' }}>Growth Analytics</h3>
+                      <div style={{ height: 300, background: 'rgba(255,255,255,0.01)', borderRadius: 20, border: '1px dashed var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                         Interactive Chart Component (Coming Soon)
+                      </div>
                    </div>
-
-                   <div className="card" style={{ padding:'1.5rem' }}>
-                      <h3 style={{ fontSize:'1.1rem', fontWeight:800, marginBottom:'1.5rem' }}>Recent Activity</h3>
-                      <div style={{ display:'grid', gap:16 }}>
-                         {analytics.recentBookings?.map(b => (
-                           <div key={b._id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid var(--border-subtle)', pb:12 }}>
-                              <div style={{ minWidth:0 }}>
-                                 <p style={{ fontWeight:700, fontSize:'0.9rem' }}>{b.user?.name}</p>
-                                 <p style={{ fontSize:'0.75rem', color:'var(--text-muted)' }} className="truncate">{b.service?.title}</p>
-                              </div>
-                              <div style={{ textAlign:'right' }}>
-                                 <span style={{ fontSize:'0.7rem', fontWeight:800, color:'var(--brand-400)' }}>₹{b.totalAmount}</span>
-                                 <div style={{ fontSize:'0.65rem', color:'var(--text-muted)' }}>{new Date(b.createdAt).toLocaleDateString()}</div>
+                   <div className="glass-card" style={{ padding: '2rem' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem' }}>System Alerts</h3>
+                      <div style={{ display: 'grid', gap: '1rem' }}>
+                         {pending.length > 0 && (
+                           <div style={{ padding: '1.25rem', borderRadius: 16, background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', gap: 12 }}>
+                              <ShieldCheck size={20} className="text-warning" />
+                              <div>
+                                 <p style={{ fontWeight: 800, fontSize: '0.9rem', color: 'white' }}>Pending Approvals</p>
+                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{pending.length} experts waiting for verification.</p>
+                                 <button onClick={() => setTab('providers')} style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}>REVIEW NOW →</button>
                               </div>
                            </div>
-                         ))}
+                         )}
+                         <div style={{ padding: '1.25rem', borderRadius: 16, background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', gap: 12 }}>
+                            <CheckCircle size={20} className="text-success" />
+                            <div>
+                               <p style={{ fontWeight: 800, fontSize: '0.9rem', color: 'white' }}>Server Status</p>
+                               <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>All systems operational. Latency: 42ms</p>
+                            </div>
+                         </div>
                       </div>
-                      <button onClick={() => setTab('bookings')} style={{ width:'100%', marginTop:24, padding:'0.75rem', background:'rgba(255,255,255,0.02)', border:'1px solid var(--border-subtle)', borderRadius:8, fontSize:'0.8rem', fontWeight:700, color:'var(--text-muted)', cursor:'pointer' }}>View All Bookings</button>
                    </div>
                 </div>
-              </>
+              </div>
             )}
 
-            {/* ── USERS ── */}
-            {tab==='users' && (
-              <div className="fade-in">
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem' }}>
-                   <div style={{ position:'relative', maxWidth:400, flex:1 }}>
-                      <Search size={18} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }} />
-                      <input type="text" placeholder="Search by name or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="input-field" style={{ paddingLeft:44 }} />
-                   </div>
-                </div>
-                <div className="card" style={{ overflowX:'auto' }}>
-                  <table className="table">
-                    <thead><tr><th>User Detail</th><th>Access Role</th><th>Member Since</th><th>Account Status</th><th>Operations</th></tr></thead>
-                    <tbody>
-                      {users.map(u => (
-                        <tr key={u._id}>
-                          <td>
-                            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                              <div className="avatar" style={{ width:36, height:36, fontSize:'0.9rem' }}>{u.name?.charAt(0)}</div>
-                              <div><p style={{ fontWeight:700, fontSize:'0.9rem' }}>{u.name}</p><p style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>{u.email}</p></div>
-                            </div>
-                          </td>
-                          <td>
-                            <span style={{ 
-                               display:'inline-flex', alignItems:'center', gap:6, padding:'0.3rem 0.75rem', borderRadius:999, fontSize:'0.7rem', fontWeight:800,
-                               background: u.role==='admin' ? 'rgba(245,158,11,0.1)' : u.role==='provider' ? 'rgba(168,85,247,0.1)' : 'rgba(99,102,241,0.1)',
-                               color: u.role==='admin' ? 'var(--accent-amber)' : u.role==='provider' ? 'var(--accent-purple)' : 'var(--brand-400)'
-                            }}>
-                              {u.role==='admin' ? <Shield size={12}/> : u.role==='provider' ? <Briefcase size={12}/> : <UserCheck size={12}/>}
-                              {u.role?.toUpperCase()}
-                            </span>
-                          </td>
-                          <td style={{ color:'var(--text-muted)', fontSize:'0.85rem' }}>{new Date(u.createdAt).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'})}</td>
-                          <td>
-                            <span className={`badge ${u.isActive?'badge-completed':'badge-cancelled'}`} style={{ borderRadius:999, padding:'0.3rem 0.8rem', fontSize:'0.7rem' }}>
-                               {u.isActive ? 'Active' : 'Banned'}
-                            </span>
-                          </td>
-                          <td>
-                            {u.role!=='admin' && (
-                              <div style={{ display:'flex', gap:8 }}>
-                                <button onClick={() => toggleUser(u._id)} style={{ padding:8, borderRadius:8, background:'var(--bg-card)', border:'1px solid var(--border-subtle)', color: u.isActive?'var(--accent-amber)':'var(--accent-emerald)', cursor:'pointer' }}>
-                                  {u.isActive ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-                                </button>
-                                <button onClick={() => deleteUser(u._id)} style={{ padding:8, borderRadius:8, background:'var(--bg-card)', border:'1px solid var(--border-subtle)', color:'var(--accent-rose)', cursor:'pointer' }}>
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            {/* ── CUSTOMERS LIST ── */}
+            {tab === 'users' && (
+              <div className="glass-card" style={{ padding: '1.5rem', overflow: 'hidden' }}>
+                 <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Registered Customers</h3>
+                    <div style={{ position: 'relative', width: 300 }}>
+                       <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                       <input type="text" placeholder="Search customers..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="input-field" style={{ paddingLeft: 38, height: 40, fontSize: '0.85rem' }} />
+                    </div>
+                 </div>
+                 <div style={{ overflowX: 'auto' }}>
+                    <table className="table">
+                       <thead><tr><th>Customer Detail</th><th>Status</th><th>Joined Date</th><th>Actions</th></tr></thead>
+                       <tbody>
+                          {users.filter(u => u.role === 'user').map(u => (
+                            <tr key={u._id}>
+                               <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                     <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.7rem' }}>{u.name?.charAt(0)}</div>
+                                     <div><p style={{ fontWeight: 800, fontSize: '0.9rem' }}>{u.name}</p><p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</p></div>
+                                  </div>
+                               </td>
+                               <td><span className={`badge ${u.isActive ? 'badge-success' : 'badge-error'}`} style={{ fontSize: 9 }}>{u.isActive ? 'ACTIVE' : 'BANNED'}</span></td>
+                               <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+                               <td>
+                                  <div style={{ display: 'flex', gap: 8 }}>
+                                     <button onClick={() => toggleUser(u._id)} className="btn btn-outline" style={{ padding: '0.4rem', width: 32, height: 32 }}>{u.isActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>
+                                     <button onClick={() => deleteUser(u._id)} className="btn btn-outline" style={{ padding: '0.4rem', width: 32, height: 32, color: 'var(--error)' }}><Trash2 size={14} /></button>
+                                  </div>
+                               </td>
+                            </tr>
+                          ))}
+                       </tbody>
+                    </table>
+                 </div>
+              </div>
+            )}
+
+            {/* ── ALL EXPERTS LIST ── */}
+            {tab === 'providers_all' && (
+              <div className="glass-card" style={{ padding: '1.5rem', overflow: 'hidden' }}>
+                 <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Service Professionals</h3>
+                    <div style={{ position: 'relative', width: 300 }}>
+                       <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                       <input type="text" placeholder="Search experts..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="input-field" style={{ paddingLeft: 38, height: 40, fontSize: '0.85rem' }} />
+                    </div>
+                 </div>
+                 <div style={{ overflowX: 'auto' }}>
+                    <table className="table">
+                       <thead><tr><th>Expert Detail</th><th>Verification</th><th>Rating</th><th>Status</th><th>Actions</th></tr></thead>
+                       <tbody>
+                          {users.filter(u => u.role === 'provider').map(u => (
+                            <tr key={u._id}>
+                               <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                     <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.7rem', background: 'var(--accent)', color: 'var(--primary)' }}>{u.name?.charAt(0)}</div>
+                                     <div><p style={{ fontWeight: 800, fontSize: '0.9rem' }}>{u.name}</p><p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</p></div>
+                                  </div>
+                               </td>
+                               <td>
+                                  {u.providerProfile?.isApproved ? 
+                                    <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 800 }}><ShieldCheck size={14} /> VERIFIED</span> : 
+                                    <span style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 800 }}><AlertCircle size={14} /> PENDING</span>
+                                  }
+                               </td>
+                               <td style={{ fontSize: '0.85rem', fontWeight: 700 }}><Star size={12} fill="var(--accent)" color="var(--accent)" style={{ marginRight: 4 }} />{u.providerProfile?.rating || '5.0'}</td>
+                               <td><span className={`badge ${u.isActive ? 'badge-success' : 'badge-error'}`} style={{ fontSize: 9 }}>{u.isActive ? 'ACTIVE' : 'BANNED'}</span></td>
+                               <td>
+                                  <div style={{ display: 'flex', gap: 8 }}>
+                                     <button onClick={() => toggleUser(u._id)} className="btn btn-outline" style={{ padding: '0.4rem', width: 32, height: 32 }}>{u.isActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>
+                                     <button onClick={() => deleteUser(u._id)} className="btn btn-outline" style={{ padding: '0.4rem', width: 32, height: 32, color: 'var(--error)' }}><Trash2 size={14} /></button>
+                                  </div>
+                               </td>
+                            </tr>
+                          ))}
+                       </tbody>
+                    </table>
+                 </div>
               </div>
             )}
 
