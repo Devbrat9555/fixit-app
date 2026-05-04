@@ -74,9 +74,17 @@ const BookingWizard = ({ service, onClose, initialExpertId }) => {
   });
 
   useEffect(() => {
+    // Lock background scroll when wizard is open
+    document.body.style.overflow = 'hidden';
+    
     if (step === 2) {
       fetchAvailableProviders();
     }
+
+    return () => {
+      // Restore scroll when closed
+      document.body.style.overflow = 'auto';
+    };
   }, [step]);
 
   const fetchAvailableProviders = async () => {
@@ -129,13 +137,20 @@ const BookingWizard = ({ service, onClose, initialExpertId }) => {
       <div style={{
         background:'var(--bg-surface)',
         border:'1px solid var(--border-subtle)',
-        borderRadius:'2.5rem',
+        borderRadius:'2rem',
         width:'100%', maxWidth:600,
-        padding:'2.5rem',
+        maxHeight: '90vh', // Prevent overflow on small screens
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '2rem',
         boxShadow: '0 40px 100px rgba(0,0,0,0.6)',
         position:'relative',
         overflow:'hidden'
       }} className="fade-in-up">
+        
+        <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4, margin: '-0.5rem' }} className="custom-scrollbar-thin">
+          <div style={{ padding: '0.5rem' }}>
+        
         
         {/* Header Summary */}
         <div style={{ display:'flex', gap:20, marginBottom:'2.5rem', padding:'1.25rem', borderRadius:'1.5rem', background:'rgba(255,255,255,0.02)', border:'1px solid var(--border-subtle)', position:'relative', zIndex:1 }}>
@@ -381,11 +396,13 @@ const BookingWizard = ({ service, onClose, initialExpertId }) => {
         </div>
 
         <div style={{ display:'flex', gap:12, marginTop:'2rem' }}>
-           {step > 0 && <button onClick={() => setStep(step-1)} className="btn btn-ghost" style={{ flex:1, height:50 }}>Back</button>}
-           <button onClick={() => step === 4 ? handleSubmit() : setStep(step+1)} disabled={!isStepValid() || isLoading} className="btn btn-primary" style={{ flex:2, height:50 }}>{isLoading ? 'Processing...' : step === 4 ? 'Confirm & Book' : 'Continue'}</button>
+          {step > 0 && <button onClick={() => setStep(step-1)} className="btn btn-ghost" style={{ flex:1, height:50 }}>Back</button>}
+          <button onClick={() => step === 4 ? handleSubmit() : setStep(step+1)} disabled={!isStepValid() || isLoading} className="btn btn-primary" style={{ flex:2, height:50 }}>{isLoading ? 'Processing...' : step === 4 ? 'Confirm & Book' : 'Continue'}</button>
         </div>
       </div>
     </div>
+  </div>
+</div>
   );
 };
 
