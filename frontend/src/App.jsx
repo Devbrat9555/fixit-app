@@ -5,6 +5,7 @@ import store from './redux/store';
 import { ClerkProvider, SignIn, SignUp } from '@clerk/clerk-react';
 import ClerkSync from './components/common/ClerkSync';
 import InstallPWA from './components/common/InstallPWA';
+import ScrollToTop from './components/common/ScrollToTop';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -38,6 +39,7 @@ const App = () => {
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <Provider store={store}>
         <BrowserRouter>
+          <ScrollToTop />
           <ClerkSync />
           <InstallPWA />
           <Toaster
