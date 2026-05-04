@@ -15,9 +15,9 @@ const createBooking = asyncHandler(async (req, res) => {
     providerId, userLocation 
   } = req.body;
 
-  if (req.user.role !== 'user') {
+  if (req.user.role !== 'user' && req.user.role !== 'admin') {
     res.status(403);
-    throw new Error('Expert accounts cannot book services. Please use a customer account.');
+    throw new Error('Expert accounts cannot book services. Please use a customer or admin account.');
   }
 
   const service = await Service.findById(serviceId).populate('provider', 'name');
