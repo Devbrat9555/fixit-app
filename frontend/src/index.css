@@ -55,7 +55,7 @@
 body {
   font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
   background-color: var(--bg-deep);
-  color: var(--text-main);
+  color: var(--text-primary); /* Fixed variable name */
   line-height: 1.6;
   overflow-x: hidden;
   selection-background-color: var(--accent);
@@ -135,12 +135,12 @@ h1, h2, h3, h4 {
 .btn-outline {
   background: transparent;
   border: 1.5px solid var(--border-rich);
-  color: var(--text-main);
+  color: var(--text-primary);
 }
 
 .btn-outline:hover {
   background: rgba(255,255,255,0.05);
-  border-color: var(--text-main);
+  border-color: var(--text-primary);
 }
 
 .input-field {
