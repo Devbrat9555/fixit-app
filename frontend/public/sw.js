@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fixit-v2';
+const CACHE_NAME = 'fixit-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -6,11 +6,31 @@ const ASSETS = [
   '/favicon.svg'
 ];
 
+// Install event - Skip waiting to activate immediately
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
     })
+  );
+});
+
+// Activate event - Clean up old caches and take control
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+    ])
   );
 });
 
