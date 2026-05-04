@@ -7,10 +7,10 @@ const Footer = () => {
 
   const footerLinks = {
     company: [
-      { label: 'About Us', to: '#' },
-      { label: 'Careers', to: '#' },
-      { label: 'Blog', to: '#' },
-      { label: 'Partner with Us', to: '/register' },
+      { label: 'About Us', to: '/about-us' },
+      { label: 'Careers', to: '/about-us' },
+      { label: 'Blog', to: '/about-us' },
+      { label: 'Partner with Us', to: '/become-a-partner' },
     ],
     services: [
       { label: 'Home Cleaning', to: '/services' },
@@ -19,10 +19,10 @@ const Footer = () => {
       { label: 'Plumbing Experts', to: '/services' },
     ],
     support: [
-      { label: 'Help Center', to: '#' },
-      { label: 'Safety Measures', to: '#' },
-      { label: 'Terms & Conditions', to: '#' },
-      { label: 'Privacy Policy', to: '#' },
+      { label: 'Help Center', to: '/help-center' },
+      { label: 'Safety Measures', to: '/safety-measures' },
+      { label: 'Terms & Conditions', to: '/terms-conditions' },
+      { label: 'Privacy Policy', to: '/privacy-policy' },
     ]
   };
 

@@ -25,6 +25,7 @@ import PartnerPage from './pages/PartnerPage';
 import ProvidersPage from './pages/ProvidersPage';
 import ProviderDetailPage from './pages/ProviderDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import GeneralInfoPage from './pages/GeneralInfoPage';
 
 const AppLayout = ({ children }) => (
   <>
@@ -70,6 +71,13 @@ const App = () => {
           <Route path="/providers/:id" element={<AppLayout><ProviderDetailPage /></AppLayout>} />
           <Route path="/become-a-partner" element={<AppLayout><PartnerPage /></AppLayout>} />
           <Route path="/profile" element={<ProtectedRoute><AppLayout><ProfilePage /></AppLayout></ProtectedRoute>} />
+          
+          {/* Info Routes */}
+          <Route path="/about-us" element={<AppLayout><GeneralInfoPage /></AppLayout>} />
+          <Route path="/privacy-policy" element={<AppLayout><GeneralInfoPage /></AppLayout>} />
+          <Route path="/terms-conditions" element={<AppLayout><GeneralInfoPage /></AppLayout>} />
+          <Route path="/safety-measures" element={<AppLayout><GeneralInfoPage /></AppLayout>} />
+          <Route path="/help-center" element={<AppLayout><GeneralInfoPage /></AppLayout>} />
           
           {/* Role Selection - Forced after Clerk Auth if role is missing */}
           <Route path="/select-role" element={<ProtectedRoute><AppLayout><RoleSelection /></AppLayout></ProtectedRoute>} />
