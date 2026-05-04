@@ -11,71 +11,43 @@ const NotifPanel = ({ notifications, unreadCount, onClose }) => {
   const dispatch = useDispatch();
 
   return (
-    <div className="absolute right-0 top-16 w-[340px] glass-card shadow-2xl z-50 reveal-up overflow-hidden" style={{ background: 'rgba(15,15,15,0.98)', border: '1px solid var(--border-accent)', borderRadius:20 }}>
-      <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-           <h4 className="text-white font-black text-xs uppercase tracking-widest">Inbox</h4>
-           {unreadCount > 0 && <span style={{ background:'var(--accent)', color:'var(--primary)', padding:'2px 6px', borderRadius:6, fontSize:10, fontWeight:900 }}>{unreadCount} NEW</span>}
+    <div className="glass-card shadow-2xl z-[2000] reveal-up" style={{ 
+      position: 'absolute', right: 0, top: 'calc(100% + 15px)', 
+      width: '320px', background: 'rgba(15, 15, 15, 0.98)', 
+      border: '1px solid var(--border-accent)', borderRadius: '24px',
+      overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+    }}>
+      <div style={{ display:'flex', alignItems:'center', justifyBetween:'space-between', padding:'1.25rem', borderBottom: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+           <h4 style={{ fontSize:'0.7rem', fontWeight:900, textTransform:'uppercase', letterSpacing:'0.1em', color:'white' }}>Activity</h4>
+           {unreadCount > 0 && <span style={{ background:'var(--accent)', color:'var(--primary)', padding:'2px 8px', borderRadius:6, fontSize:10, fontWeight:900 }}>{unreadCount} NEW</span>}
         </div>
-        {unreadCount > 0 && (
-          <button onClick={() => dispatch(markAllRead())} className="text-[10px] font-bold uppercase tracking-wider text-accent hover:opacity-80 transition-opacity">
-            Mark all read
-          </button>
-        )}
+        <button onClick={() => dispatch(markAllRead())} style={{ marginLeft:'auto', background:'none', border:'none', fontSize:10, fontWeight:800, color:'var(--accent)', cursor:'pointer', textTransform:'uppercase' }}>Clear All</button>
       </div>
 
-      <div style={{ maxHeight: '400px', overflowY: 'auto' }} className="custom-scrollbar">
+      <div style={{ maxHeight: '380px', overflowY: 'auto', padding: '0.5rem' }} className="custom-scrollbar-thin">
         {notifications.length === 0 ? (
-          <div className="text-center py-12">
-            <div style={{ width:48, height:48, borderRadius:99, background:'rgba(255,255,255,0.02)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-               <Bell size={20} className="opacity-20" />
-            </div>
-            <p className="text-muted text-[11px] font-medium">Your inbox is empty</p>
+          <div style={{ padding:'3rem 1rem', textAlign:'center' }}>
+            <Bell size={32} style={{ opacity:0.1, marginBottom:12 }} />
+            <p style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>No new updates</p>
           </div>
         ) : (
           notifications.map(n => (
-            <div key={n._id}
-              onClick={() => {
-                 if(!n.isRead) dispatch(markOneRead(n._id));
-                 onClose();
-              }}
-              style={{
-                padding: '1rem',
-                borderBottom: '1px solid rgba(255,255,255,0.03)',
-                background: !n.isRead ? 'rgba(250,204,21,0.02)' : 'transparent',
-                cursor: 'pointer',
-              }}
-              className="flex items-start gap-4 hover:bg-white/5 transition-colors group"
+            <div key={n._id} onClick={() => { if(!n.isRead) dispatch(markOneRead(n._id)); onClose(); }}
+              style={{ padding:'1rem', borderRadius:16, marginBottom:4, background: !n.isRead ? 'rgba(250,204,21,0.03)' : 'transparent', cursor:'pointer', display:'flex', gap:12 }}
+              className="hover-bg-subtle"
             >
-              <div style={{ 
-                 width: 36, height: 36, borderRadius: 10, 
-                 background: !n.isRead ? 'var(--accent-soft)' : 'rgba(255,255,255,0.03)', 
-                 display:'flex', alignItems:'center', justifyContent:'center', flexShrink: 0,
-                 fontSize: 16
-              }}>
-                 {n.icon || '📩'}
+              <div style={{ width:40, height:40, borderRadius:12, background: !n.isRead ? 'var(--accent-soft)' : 'rgba(255,255,255,0.03)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                 {n.icon || '✨'}
               </div>
-              <div className="flex-1 min-w-0">
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:2 }}>
-                   <p className={`text-[11px] leading-tight ${!n.isRead ? 'text-white font-bold' : 'text-dim'}`}>
-                     {n.title}
-                   </p>
-                   {!n.isRead && <div style={{ width:6, height:6, borderRadius:99, background:'var(--accent)', marginTop:4 }} />}
-                </div>
-                <p className="text-[10px] text-muted leading-relaxed line-clamp-2">
-                  {n.message}
-                </p>
-                <p className="text-[9px] text-muted/50 mt-2 font-bold uppercase tracking-tighter">
-                  {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                </p>
+              <div style={{ flex:1 }}>
+                 <p style={{ fontSize:'0.8rem', fontWeight: !n.isRead ? 800 : 600, color: !n.isRead ? 'white' : 'var(--text-dim)', marginBottom:2 }}>{n.title}</p>
+                 <p style={{ fontSize:'0.7rem', color:'var(--text-muted)', lineHeight:1.4 }}>{n.message}</p>
+                 <p style={{ fontSize:'0.6rem', color:'var(--text-muted)', opacity:0.5, marginTop:6, fontWeight:800 }}>{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
               </div>
             </div>
           ))
         )}
-      </div>
-      
-      <div className="p-3 bg-white/5 border-t border-white/5 text-center">
-         <button className="text-[10px] font-black uppercase text-dim hover:text-white transition-colors">View All Activity</button>
       </div>
     </div>
   );
@@ -279,20 +251,37 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="fade-in" style={{ position:'fixed', top:'var(--nav-h)', left:0, right:0, bottom:0, background:'var(--bg-deep)', zIndex:999, padding:'2rem' }}>
-           <div style={{ display:'grid', gap:'1rem' }}>
-              {navLinks.map(l => (
-                <Link key={l.to} to={l.to} style={{ fontSize:'1.75rem', fontWeight:800, textDecoration:'none', color:'white', padding:'1rem 0', borderBottom:'1px solid var(--border-subtle)' }}>
+        <div className="fade-in" style={{ 
+          position:'fixed', top:0, left:0, right:0, bottom:0, 
+          background:'rgba(10, 10, 10, 0.98)', 
+          backdropFilter: 'blur(20px)',
+          zIndex: 999, padding: '2rem',
+          display:'flex', flexDirection:'column'
+        }}>
+           <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'2rem' }}>
+              <button onClick={() => setMenuOpen(false)} style={{ background:'none', border:'none', color:'white' }}>
+                 <X size={32} />
+              </button>
+           </div>
+           
+           <div style={{ display:'grid', gap:'0.5rem' }}>
+              {navLinks.map((l, i) => (
+                <Link key={l.to} to={l.to} style={{ 
+                   fontSize:'2rem', fontWeight:900, textDecoration:'none', 
+                   color: location.pathname === l.to ? 'var(--accent)' : 'white', 
+                   padding:'1.25rem 0', borderBottom:'1px solid var(--border-subtle)',
+                   animation: `revealUp 0.5s ease forwards ${i * 0.1}s`
+                }}>
                    {l.label}
                 </Link>
               ))}
-              <div style={{ marginTop:'2.5rem', display:'grid', gap:'1rem' }}>
+              <div style={{ marginTop:'3rem', display:'grid', gap:'1rem' }}>
                  {user ? (
-                   <Link to={getDashLink()} className="btn btn-primary" style={{ height:60, fontSize:'1.1rem' }}>Go to Dashboard</Link>
+                   <Link to={getDashLink()} className="btn btn-primary" style={{ height:60, fontSize:'1.1rem', borderRadius:16 }}>Go to Dashboard</Link>
                  ) : (
                    <>
-                     <Link to="/login" className="btn btn-outline" style={{ height:60, fontSize:'1.1rem' }}>Login</Link>
-                     <Link to="/register" className="btn btn-primary" style={{ height:60, fontSize:'1.1rem' }}>Get Started</Link>
+                     <Link to="/login" className="btn btn-outline" style={{ height:60, fontSize:'1.1rem', borderRadius:16 }}>Login</Link>
+                     <Link to="/register" className="btn btn-primary" style={{ height:60, fontSize:'1.1rem', borderRadius:16 }}>Get Started</Link>
                    </>
                  )}
               </div>

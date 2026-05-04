@@ -7,40 +7,43 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  /* Premium Palette */
-  --primary:    #121212;
-  --secondary:  #1e1e1e;
-  --accent:     #facc15; /* Professional Amber/Gold */
-  --accent-soft: rgba(250, 204, 21, 0.1);
+  /* Premium Palette - Deep Onyx & Gold */
+  --primary:    #050505;
+  --secondary:  #0f0f0f;
+  --accent:     #facc15; 
+  --accent-soft: rgba(250, 204, 21, 0.08);
   
-  /* Brand */
-  --brand-grad: linear-gradient(135deg, #facc15 0%, #fb923c 100%);
-  --brand-glow: 0 0 30px rgba(250, 204, 21, 0.2);
+  /* Gradation */
+  --grad-brand: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  --grad-dark:  linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  --brand-glow: 0 0 40px rgba(250, 204, 21, 0.15);
 
-  /* Semantic Colors */
+  /* Semantic */
   --success: #10b981;
-  --error:   #ef4444;
-  --info:    #3b82f6;
+  --error:   #f43f5e;
+  --info:    #6366f1;
   --warning: #f59e0b;
 
   /* Surfaces */
-  --bg-deep:   #0a0a0a;
-  --bg-card:   #141414;
-  --bg-elevated: #1c1c1c;
+  --bg-deep:   #050505;
+  --bg-surface: #0a0a0a;
+  --bg-card:   #0f0f0f;
+  --bg-elevated: #141414;
   
   /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-rich:   rgba(255, 255, 255, 0.1);
-  --border-accent: rgba(250, 204, 21, 0.3);
+  --border-subtle: rgba(255, 255, 255, 0.03);
+  --border-rich:   rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(250, 204, 21, 0.2);
 
   /* Text */
-  --text-main:    #ffffff;
+  --text-primary: #ffffff;
+  --text-secondary: #e5e5e5;
   --text-dim:     #a3a3a3;
-  --text-muted:   #737373;
-  --text-accent:  #facc15;
+  --text-muted:   #525252;
 
   /* Layout */
-  --nav-h: 80px;
+  --nav-h: 85px;
+  --radius-2xl: 32px;
   --radius-xl: 24px;
   --radius-lg: 16px;
   --radius-md: 12px;
@@ -219,11 +222,29 @@ h1, h2, h3, h4 {
 
 .reveal-up { animation: revealUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
 
+/* ── Custom Scrollbar ───────────────────────────────────── */
+.custom-scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar-thin::-webkit-scrollbar-thumb { 
+  background: var(--border-rich); 
+  border-radius: 10px; 
+}
+.custom-scrollbar-thin::-webkit-scrollbar-thumb:hover { 
+  background: var(--accent); 
+}
+
+/* ── Interactive ────────────────────────────────────────── */
+.hover-bg-subtle:hover {
+  background: rgba(255,255,255,0.04) !important;
+  transform: translateX(4px);
+  transition: all 0.3s ease;
+}
+
 /* ── Grid ────────────────────────────────────────────────── */
 .grid-auto {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2.5rem;
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────────── */
@@ -240,19 +261,19 @@ h1, h2, h3, h4 {
 }
 
 @media (max-width: 768px) {
-  :root { --nav-h: 70px; }
-  .container { padding: 0 1.5rem; }
+  :root { --nav-h: 75px; }
+  .container { padding: 0 1.25rem; }
   h1 { font-size: 2.5rem !important; }
   h2 { font-size: 2rem !important; }
   .grid-auto { grid-template-columns: 1fr; }
   .hide-mobile { display: none !important; }
   .show-mobile { display: flex !important; }
   
-  .btn { width: 100%; } /* Mobile buttons are usually full width for better UX */
+  .btn { width: 100%; border-radius: 16px !important; }
   .cl-rootBox { padding: 2rem 1rem; }
 }
 
 @media (max-width: 480px) {
   h1 { font-size: 2.2rem !important; }
-  .btn { padding: 0.8rem 1.5rem; }
+  .btn { padding: 0.9rem 1.5rem; }
 }
