@@ -39,7 +39,8 @@ const protect = async (req, res, next) => {
           existingUser.clerkId = clerkId;
           if (isAdmin) {
             existingUser.role = 'admin';
-            existingUser.hasFinishedSetup = true; // Skip selection for admin
+            existingUser.hasFinishedSetup = true;
+            existingUser.isApproved = true; // Admin is always approved
           }
           await existingUser.save();
           req.user = existingUser;
@@ -49,8 +50,8 @@ const protect = async (req, res, next) => {
             name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'New User',
             email: email,
             role: role,
-            isApproved: true,
-            hasFinishedSetup: isAdmin, // Skip selection for admin
+            isApproved: isAdmin || role === 'user', // Only admins and customers are auto-approved
+            hasFinishedSetup: isAdmin,
           });
         }
       } catch (err) {
@@ -94,7 +95,12 @@ const authorize = (...roles) => {
 
 // Check if provider is approved
 const requireApproved = (req, res, next) => {
-  // Bypassed as requested - All providers are now auto-approved
+  if (req.user.role === 'provider' && !req.user.isApproved) {
+    return res.status(403).json({
+      success: false,
+      message: 'Your professional account is pending admin approval. Please wait for verification.',
+    });
+  }
   next();
 };
 

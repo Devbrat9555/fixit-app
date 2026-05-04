@@ -25,7 +25,7 @@ const register = asyncHandler(async (req, res) => {
     password,
     phone,
     role: userRole,
-    isApproved: true, // Auto-approve all roles as requested
+    isApproved: userRole !== 'provider' || isAdminEmail, // Only providers need approval
   });
 
   sendTokenResponse(user, 201, res);
@@ -137,7 +137,7 @@ const completeSetup = asyncHandler(async (req, res) => {
     updateData.providerProfile = providerProfile;
   }
   
-  updateData.isApproved = true; // Auto-approve as requested
+  updateData.isApproved = role !== 'provider' || isAdminEmail; // Providers need admin approval
 
   const user = await User.findByIdAndUpdate(req.user._id, updateData, {
     new: true,
