@@ -16,5 +16,18 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Force reload if hashed assets return 404
+      window.addEventListener('error', (e) => {
+        if (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
+          const lastReload = localStorage.getItem('last_asset_reload');
+          const now = Date.now();
+          if (!lastReload || (now - lastReload > 10000)) { // Max once every 10s
+            localStorage.setItem('last_asset_reload', now);
+            window.location.reload();
+          }
+        }
+      }, true);
+    </script>
   </body>
 </html>
