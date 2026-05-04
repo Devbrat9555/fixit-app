@@ -17,7 +17,7 @@ const protect = async (req, res, next) => {
 
   try {
     // Verify the token using Clerk SDK
-    const decoded = await clerkClient.verifyJwt(token);
+    const decoded = await clerkClient.verifyToken(token);
     const clerkId = decoded.sub;
 
     req.user = await User.findOne({ clerkId });
