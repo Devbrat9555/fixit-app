@@ -33,7 +33,7 @@ const HomePage = () => {
         background: 'radial-gradient(circle at 80% 20%, rgba(250, 204, 21, 0.05) 0%, transparent 40%)'
       }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '4rem', alignItems: 'center' }} className="grid-mobile-stack">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '4rem', alignItems: 'center' }}>
             <div className="reveal-up">
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '0.5rem 1.25rem', borderRadius: 99, background: 'var(--accent-soft)', border: '1px solid var(--border-accent)', marginBottom: '2rem' }}>
                 <Sparkles size={16} className="text-accent" />
@@ -61,7 +61,7 @@ const HomePage = () => {
                     style={{ paddingLeft: 52, height: 64, fontSize: '1rem', border: '1px solid var(--border-rich)', background: 'rgba(255,255,255,0.02)' }}
                   />
                 </div>
-                <button type="submit" className="btn btn-primary" style={{ padding: '0 2.5rem', height: 64 }}>Search</button>
+                <button type="submit" className="btn btn-primary" style={{ padding: '0 2.5rem', height: 64, flexShrink: 0 }}>Search</button>
               </form>
 
               <div style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
@@ -145,7 +145,7 @@ const HomePage = () => {
       {/* ── WHY FIXIT ─────────────────────────────────────────── */}
       <section style={{ padding: '8rem 0', background: 'var(--bg-deep)', borderTop: '1px solid var(--border-subtle)' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3rem' }} className="grid-mobile-stack">
+          <div className="grid-mobile-stack" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem' }}>
             {[
               { icon: Shield, title: 'Verified Excellence', desc: 'Every professional undergoes a multi-step background and skill verification process.' },
               { icon: Zap, title: 'Instant Assignment', desc: 'Advanced algorithms ensure the right expert reaches your door in record time.' },
@@ -174,7 +174,7 @@ const HomePage = () => {
           }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--brand-grad)' }} />
             
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:64, alignItems:'center' }} className="grid-mobile-stack">
+            <div className="grid-mobile-stack" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 64, alignItems:'center' }}>
                <div>
                   <span style={{ color:'var(--accent)', fontWeight:800, fontSize:'0.8rem', letterSpacing:'0.2em' }}>PARTNERSHIP</span>
                   <h2 style={{ fontSize: '3.5rem', marginBottom: '1.5rem', marginTop:12 }}>Join the Elite Expert Network</h2>

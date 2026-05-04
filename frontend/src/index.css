@@ -224,8 +224,32 @@ h1, h2, h3, h4 {
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────────── */
+.hide-mobile { display: flex; }
+.show-mobile { display: none; }
+
+.grid-mobile-stack {
+  display: grid;
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .grid-mobile-stack { grid-template-columns: 1fr !important; }
+}
+
 @media (max-width: 768px) {
+  :root { --nav-h: 70px; }
   .container { padding: 0 1.5rem; }
   h1 { font-size: 2.5rem !important; }
+  h2 { font-size: 2rem !important; }
   .grid-auto { grid-template-columns: 1fr; }
+  .hide-mobile { display: none !important; }
+  .show-mobile { display: flex !important; }
+  
+  .btn { width: 100%; } /* Mobile buttons are usually full width for better UX */
+  .cl-rootBox { padding: 2rem 1rem; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 2.2rem !important; }
+  .btn { padding: 0.8rem 1.5rem; }
 }
