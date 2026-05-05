@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fixit-v5';
+const CACHE_NAME = 'fixit-v6';
 const ASSETS = [
   '/',
   '/index.html',
@@ -37,11 +37,17 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
   
-  // Skip API and non-GET
-  if (event.request.method !== 'GET' || url.includes('/api/')) return;
+  // 🚨 CRITICAL: Bypass Service Worker for Clerk and API calls
+  if (
+    event.request.method !== 'GET' || 
+    url.includes('/api/') || 
+    url.includes('clerk') || 
+    url.includes('accounts.dev')
+  ) {
+    return;
+  }
 
-  // Hashed assets (index-XXXX.js/css) should always be fetched fresh if not found
-  // to avoid 404s during new deployments.
+  // Hashed assets (index-XXXX.js/css) should always be fetched fresh
   if (url.includes('index-')) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
