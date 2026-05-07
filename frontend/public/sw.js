@@ -51,8 +51,10 @@ self.addEventListener('fetch', (event) => {
   // Navigation requests (entering a URL or refreshing) should return index.html
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/index.html').then((response) => {
-        return response || fetch(event.request);
+      caches.match('/').then((response) => {
+        return response || caches.match('/index.html').then((indexResponse) => {
+          return indexResponse || fetch(event.request);
+        });
       })
     );
     return;
