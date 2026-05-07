@@ -13,42 +13,56 @@ const errorHandler = require('./middleware/error');
 dotenv.config();
 connectDB();
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:3000',
+  'https://frontend-tau-virid-40.vercel.app',
+  'https://frontend-tau-virid-40.vercel.app/'
+];
+
 const app = express();
 
 // 🛡️ Robust CORS Configuration
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app') || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin', 
+    'x-clerk-auth-token',
+    'x-clerk-sdk-version',
+    'clerk-db-auth-token'
+  ]
+}));
+
+// Early OPTIONS handler for preflight
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:3000',
-    'https://frontend-tau-virid-40.vercel.app',
-    'https://frontend-tau-virid-40.vercel.app/'
-  ];
-
-  if (origin && (allowedOrigins.includes(origin) || origin.includes('vercel.app') || origin.includes('localhost'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (!origin) {
-    // For non-browser requests (mobile/curl)
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-clerk-auth-token, x-clerk-sdk-version, clerk-db-auth-token');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
   if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin;
+    if (origin && (allowedOrigins.includes(origin) || origin.includes('vercel.app'))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-clerk-auth-token, x-clerk-sdk-version, clerk-db-auth-token');
     return res.status(200).end();
   }
   next();
 });
-
-// Also use cors package for extra compatibility but with simpler config
-app.use(cors({
-  origin: true, // Allow all origins (we filter manually above for security)
-  credentials: true
-}));
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
