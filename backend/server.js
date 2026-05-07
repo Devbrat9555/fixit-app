@@ -45,9 +45,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-clerk-auth-token', 'x-clerk-sdk-version', 'clerk-db-auth-token']
 }));
 
-// Simple pre-flight handler
-app.options('*', cors());
-
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
