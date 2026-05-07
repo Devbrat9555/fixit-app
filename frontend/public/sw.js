@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fixit-v7';
+const CACHE_NAME = 'fixit-v8';
 const ASSETS = [
   '/',
   '/index.html',
@@ -43,7 +43,13 @@ self.addEventListener('fetch', (event) => {
   // NAVIGATION (SPA support)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
+      fetch(event.request).then((response) => {
+        // If the network returns 404, we must fallback to index.html for SPA routing
+        if (response.status === 404) {
+          return caches.match('/') || caches.match('/index.html') || response;
+        }
+        return response;
+      }).catch(() => {
         return caches.match('/') || caches.match('/index.html');
       })
     );
