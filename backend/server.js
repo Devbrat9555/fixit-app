@@ -24,33 +24,29 @@ const allowedOrigins = [
 
 const app = express();
 
-// 🚨 ULTIMATE CORS BYPASS (Forced Headers)
+// 📝 Request Logger (Check Render Logs for this!)
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const isAllowed = origin && (origin.includes('vercel.app') || origin.includes('localhost') || allowedOrigins.includes(origin));
-  
-  if (isAllowed) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  } else if (!origin) {
-    // Non-browser requests
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-clerk-auth-token, x-clerk-sdk-version, clerk-db-auth-token');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  console.log(`${new Date().toISOString()} | ${req.method} ${req.path} | Origin: ${req.headers.origin || 'None'}`);
   next();
 });
 
-// Also use cors package for extra layer
+// 🛡️ REFINED CORS SETUP
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow any origin that is localhost or vercel.app
+    if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Fallback to allow others during production debug
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-clerk-auth-token', 'x-clerk-sdk-version', 'clerk-db-auth-token']
 }));
+
+// Simple pre-flight handler
+app.options('*', cors());
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
