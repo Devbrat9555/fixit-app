@@ -24,26 +24,15 @@ const allowedOrigins = [
 
 const app = express();
 
-// 🛡️ ULTRA-ROBUST CORS (Fixes all Vercel/Render issues)
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.includes('vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Fallback to allow everything if check fails
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-clerk-auth-token', 'x-clerk-sdk-version', 'clerk-db-auth-token']
-}));
-
-// Manual fallback for preflight (OPTIONS)
+// 🚨 ULTIMATE CORS BYPASS (Forced Headers)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && (origin.includes('vercel.app') || origin.includes('localhost') || allowedOrigins.includes(origin))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-clerk-auth-token, x-clerk-sdk-version, clerk-db-auth-token');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -53,6 +42,12 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Also use cors package for extra layer
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
