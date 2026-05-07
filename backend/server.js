@@ -27,15 +27,18 @@ const app = express();
 // 🚨 ULTIMATE CORS BYPASS (Forced Headers)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && (origin.includes('vercel.app') || origin.includes('localhost') || allowedOrigins.includes(origin))) {
+  const isAllowed = origin && (origin.includes('vercel.app') || origin.includes('localhost') || allowedOrigins.includes(origin));
+  
+  if (isAllowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   } else if (!origin) {
+    // Non-browser requests
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
   
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, x-clerk-auth-token, x-clerk-sdk-version, clerk-db-auth-token');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
