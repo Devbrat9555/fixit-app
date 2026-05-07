@@ -1,76 +1,69 @@
-const CACHE_NAME = 'fixit-v6';
+const CACHE_NAME = 'fixit-v7';
 const ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.svg'
+  '/favicon.svg?v=2'
 ];
 
 // Install event - Skip waiting to activate immediately
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
-// Activate event - Clean up old caches and take control
+// Activate event - Clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      self.clients.claim(),
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-    ])
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) return caches.delete(cacheName);
+        })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = event.request.url;
+  const url = new URL(event.request.url);
   
-  // 🚨 CRITICAL: Bypass Service Worker for Clerk and API calls
+  // 🚨 BYPASS FOR API & CLERK & NON-GET
   if (
     event.request.method !== 'GET' || 
-    url.includes('/api/') || 
-    url.includes('clerk') || 
-    url.includes('accounts.') ||
-    url.includes('.clerk.accounts.dev')
+    url.pathname.includes('/api/') || 
+    url.hostname.includes('clerk') ||
+    url.hostname.includes('accounts.')
   ) {
     return;
   }
 
-  // Navigation requests (entering a URL or refreshing) should return index.html
+  // NAVIGATION (SPA support)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/').then((response) => {
-        return response || caches.match('/index.html').then((indexResponse) => {
-          return indexResponse || fetch(event.request);
-        });
+      fetch(event.request).catch(() => {
+        return caches.match('/') || caches.match('/index.html');
       })
     );
     return;
   }
 
-  // Hashed assets (index-XXXX.js/css) should always be fetched fresh
-  if (url.includes('index-')) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
+  // ASSETS
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
+      
+      return fetch(event.request)
+        .then((networkResponse) => {
+          // Optional: Cache images or other assets here
+          return networkResponse;
+        })
+        .catch(() => {
+          // Silent fail for network errors
+          return new Response('Network error occurred', { status: 408, headers: { 'Content-Type': 'text/plain' } });
+        });
     })
   );
 });
