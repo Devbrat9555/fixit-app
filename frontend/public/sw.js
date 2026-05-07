@@ -42,8 +42,19 @@ self.addEventListener('fetch', (event) => {
     event.request.method !== 'GET' || 
     url.includes('/api/') || 
     url.includes('clerk') || 
-    url.includes('accounts.dev')
+    url.includes('accounts.') ||
+    url.includes('.clerk.accounts.dev')
   ) {
+    return;
+  }
+
+  // Navigation requests (entering a URL or refreshing) should return index.html
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('/index.html').then((response) => {
+        return response || fetch(event.request);
+      })
+    );
     return;
   }
 

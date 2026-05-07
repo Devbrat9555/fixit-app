@@ -24,6 +24,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Don't redirect if we're already on the login or register page to avoid loops
+      const path = window.location.pathname;
+      if (path === '/login' || path === '/register') {
+        return Promise.reject(error);
+      }
+
       if (window.Clerk) {
         window.Clerk.signOut();
       }
